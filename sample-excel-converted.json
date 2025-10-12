@@ -1,0 +1,84 @@
+{
+  "assessmentType": "alz",
+  "language": "en",
+  "exportDate": "2025-10-12T14:30:00.000Z",
+  "totalItems": 243,
+  "completedItems": 15,
+  "items": [
+    {
+      "id": "A01.01",
+      "status": "Compliant",
+      "comments": "We use a single Entra tenant for all Azure resources in our organization"
+    },
+    {
+      "id": "A01.02",
+      "status": "Not Applicable",
+      "comments": "We don't have multi-tenant requirements"
+    },
+    {
+      "id": "A01.03",
+      "status": "Compliant",
+      "comments": "Azure Lighthouse is configured for partner management"
+    },
+    {
+      "id": "A02.01",
+      "status": "Compliant",
+      "comments": "Partner access is managed through Azure Lighthouse"
+    },
+    {
+      "id": "A02.02",
+      "status": "Non-Compliant",
+      "comments": "Need to document CSP support escalation process"
+    },
+    {
+      "id": "A02.03",
+      "status": "In Progress",
+      "comments": "Cost Management views are being set up by finance team"
+    },
+    {
+      "id": "A03.01",
+      "status": "Compliant",
+      "comments": "Notification contact email is configured and monitored"
+    },
+    {
+      "id": "A03.02",
+      "status": "Compliant",
+      "comments": "Department and account structure is aligned with organization"
+    },
+    {
+      "id": "A03.03",
+      "status": "Compliant",
+      "comments": "Budgets and alerts are configured for all departments"
+    },
+    {
+      "id": "A03.04",
+      "status": "Compliant",
+      "comments": "DA and AO view charges are enabled"
+    },
+    {
+      "id": "A03.05",
+      "status": "Compliant",
+      "comments": "Dev/Test subscriptions are used for non-production workloads"
+    },
+    {
+      "id": "A04.01",
+      "status": "Non-Compliant",
+      "comments": "Need to review and update Microsoft Customer Agreement roles"
+    },
+    {
+      "id": "A04.02",
+      "status": "Compliant",
+      "comments": "Billing profiles are properly configured"
+    },
+    {
+      "id": "A04.03",
+      "status": "Compliant",
+      "comments": "Invoice sections are set up for cost allocation"
+    },
+    {
+      "id": "A04.04",
+      "status": "Non-Compliant",
+      "comments": "Audit process for billing RBAC needs to be documented and implemented"
+    }
+  ]
+}

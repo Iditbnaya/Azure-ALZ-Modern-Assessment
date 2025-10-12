@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Azure Landing Zone Assessment Tool</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- SheetJS for Excel file support -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0078d4">
+</head>
+<body>
+    <div id="app">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-content">
+                <div class="logo-section">
+                    <i class="fab fa-microsoft"></i>
+                    <h1>Azure Landing Zone Assessment</h1>
+                </div>
+                <div class="header-controls">
+                    <select id="languageSelector" class="language-selector">
+                        <option value="en">English</option>
+                        <option value="es">Español</option>
+                        <option value="ja">日本語</option>
+                        <option value="ko">한국어</option>
+                        <option value="pt">Português</option>
+                        <option value="zh-Hant">繁體中文</option>
+                    </select>
+                    <select id="checklistSelector" class="checklist-selector">
+                        <option value="">Select Assessment Type</option>
+                        <option value="alz">Azure Landing Zone</option>
+                        <option value="ai_lz">AI Landing Zone</option>
+                        <option value="aks">Azure Kubernetes Service</option>
+                        <option value="appsvc">App Service</option>
+                        <option value="avd">Azure Virtual Desktop</option>
+                        <option value="apim">API Management</option>
+                        <!-- Add more as needed -->
+                    </select>
+                    <button id="loadChecklist" class="btn btn-primary">
+                        <i class="fas fa-download"></i> Load Assessment
+                    </button>
+                    <input type="file" id="uploadAssessment" accept=".json,.xlsx,.csv" style="display: none;">
+                    <button id="uploadAssessmentBtn" class="btn btn-secondary">
+                        <i class="fas fa-upload"></i> Upload Assessment
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Loading State -->
+            <div id="loadingState" class="loading-state">
+                <div class="loading-spinner">
+                    <i class="fas fa-spinner fa-spin"></i>
+                </div>
+                <p>Loading assessment data...</p>
+            </div>
+
+            <!-- Welcome Screen -->
+            <div id="welcomeScreen" class="welcome-screen">
+                <div class="welcome-content">
+                    <h2>Welcome to Azure Landing Zone Assessment</h2>
+                    <p>This tool helps you assess your Azure implementation against best practices and recommendations.</p>
+                    
+                    <div class="features-grid">
+                        <div class="feature-card">
+                            <i class="fas fa-check-circle"></i>
+                            <h3>Interactive Assessment</h3>
+                            <p>Go through recommendations row by row with easy status tracking</p>
+                        </div>
+                        <div class="feature-card">
+                            <i class="fas fa-chart-pie"></i>
+                            <h3>Real-time Dashboard</h3>
+                            <p>Visual progress tracking with charts and statistics</p>
+                        </div>
+                        <div class="feature-card">
+                            <i class="fas fa-download"></i>
+                            <h3>Export Results</h3>
+                            <p>Export your assessment in multiple formats</p>
+                        </div>
+                        <div class="feature-card">
+                            <i class="fas fa-globe"></i>
+                            <h3>Multi-language</h3>
+                            <p>Available in multiple languages</p>
+                        </div>
+                    </div>
+
+                    <div class="getting-started">
+                        <h3>Getting Started</h3>
+                        <ol>
+                            <li>Select your preferred language from the dropdown</li>
+                            <li>Choose the assessment type (ALZ, AKS, etc.)</li>
+                            <li>Click "Load Assessment" to begin</li>
+                            <li>Work through the recommendations and track your progress</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Assessment Content -->
+            <div id="assessmentContent" class="assessment-content" style="display: none;">
+                <!-- Navigation Tabs -->
+                <nav class="assessment-nav">
+                    <button id="assessmentTab" class="nav-tab active">
+                        <i class="fas fa-list-check"></i> Assessment
+                    </button>
+                    <button id="dashboardTab" class="nav-tab">
+                        <i class="fas fa-chart-line"></i> Dashboard
+                    </button>
+                    <button id="exportTab" class="nav-tab">
+                        <i class="fas fa-download"></i> Export
+                    </button>
+                </nav>
+
+                <!-- Assessment Panel -->
+                <div id="assessmentPanel" class="panel active">
+                    <!-- Progress Bar -->
+                    <div class="progress-section">
+                        <div class="progress-info">
+                            <span id="progressText">Progress: 0/0 items completed</span>
+                            <span id="progressPercentage">0%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div id="progressFill" class="progress-fill"></div>
+                        </div>
+                    </div>
+
+                    <!-- Filters -->
+                    <div class="filters-section">
+                        <div class="filter-group">
+                            <label for="categoryFilter">Category:</label>
+                            <select id="categoryFilter">
+                                <option value="">All Categories</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="severityFilter">Severity:</label>
+                            <select id="severityFilter">
+                                <option value="">All Severities</option>
+                                <option value="High">High</option>
+                                <option value="Medium">Medium</option>
+                                <option value="Low">Low</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="statusFilter">Status:</label>
+                            <select id="statusFilter">
+                                <option value="">All Statuses</option>
+                                <option value="Not Reviewed">Not Reviewed</option>
+                                <option value="Compliant">Compliant</option>
+                                <option value="Non-Compliant">Non-Compliant</option>
+                                <option value="Not Applicable">Not Applicable</option>
+                            </select>
+                        </div>
+                        <button id="clearFilters" class="btn btn-secondary">Clear Filters</button>
+                        <button id="resetAssessment" class="btn btn-warning" style="margin-left: 1rem;">
+                            <i class="fas fa-undo"></i> Reset Assessment
+                        </button>
+                    </div>
+
+                    <!-- Assessment Items -->
+                    <div id="assessmentItems" class="assessment-items">
+                        <!-- Dynamic content will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- Dashboard Panel -->
+                <div id="dashboardPanel" class="panel">
+                    <div class="dashboard-grid">
+                        <div class="dashboard-card">
+                            <h3>Assessment Progress</h3>
+                            <canvas id="progressChart"></canvas>
+                        </div>
+                        <div class="dashboard-card">
+                            <h3>Compliance Status</h3>
+                            <canvas id="statusChart"></canvas>
+                        </div>
+                        <div class="dashboard-card">
+                            <h3>Severity Distribution</h3>
+                            <canvas id="severityChart"></canvas>
+                        </div>
+                        <div class="dashboard-card">
+                            <h3>Category Breakdown</h3>
+                            <canvas id="categoryChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="summary-stats">
+                        <div class="stat-card">
+                            <div class="stat-number" id="totalItems">0</div>
+                            <div class="stat-label">Total Items</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="completedItems">0</div>
+                            <div class="stat-label">Completed</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="compliantItems">0</div>
+                            <div class="stat-label">Compliant</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="nonCompliantItems">0</div>
+                            <div class="stat-label">Non-Compliant</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Export Panel -->
+                <div id="exportPanel" class="panel">
+                    <div class="export-options">
+                        <h3>Export Assessment Results</h3>
+                        
+                        <div class="export-format-section">
+                            <h4>Export Format</h4>
+                            <div class="format-options">
+                                <label class="format-option">
+                                    <input type="radio" name="exportFormat" value="json" checked>
+                                    <span>JSON</span>
+                                </label>
+                                <label class="format-option">
+                                    <input type="radio" name="exportFormat" value="csv">
+                                    <span>CSV</span>
+                                </label>
+                                <label class="format-option">
+                                    <input type="radio" name="exportFormat" value="html">
+                                    <span>HTML Report</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="export-options-section">
+                            <h4>Export Options</h4>
+                            <label class="checkbox-option">
+                                <input type="checkbox" id="includeComments" checked>
+                                <span>Include Comments</span>
+                            </label>
+                            <label class="checkbox-option">
+                                <input type="checkbox" id="includeLinks" checked>
+                                <span>Include Reference Links</span>
+                            </label>
+                            <label class="checkbox-option">
+                                <input type="checkbox" id="includeOnlyReviewed">
+                                <span>Only Reviewed Items</span>
+                            </label>
+                        </div>
+
+                        <div class="export-actions">
+                            <button id="exportData" class="btn btn-primary">
+                                <i class="fas fa-download"></i> Export Assessment
+                            </button>
+                            <button id="saveProgress" class="btn btn-secondary">
+                                <i class="fas fa-save"></i> Save Progress
+                            </button>
+                            <button id="loadProgress" class="btn btn-secondary">
+                                <i class="fas fa-upload"></i> Load Progress
+                                <input type="file" id="progressFile" accept=".json" style="display: none;">
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/data-loader.js"></script>
+    <script src="js/assessment.js"></script>
+    <script src="js/dashboard.js"></script>
+    <script src="js/export.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+ID,Recommendation,Status,Comments,Category
+A01.01,Use one Entra tenant for managing your Azure resources,Compliant,Already implemented in our organization,Identity
+A02.03,Setup Cost Reporting and Views with Azure Cost Management,Non-Compliant,Need to configure cost management views,Cost
+A03.01,Set up a Notification Contact email address,Not Applicable,Using different notification system,Cost
+A03.04,Enable both DA View Charges and AO View Charges,Not Reviewed,,Security
+A04.04,Define and document a process to audit billing RBAC roles,Compliant,Process documented and approved,Cost

@@ -1,0 +1,30 @@
+{
+  "name": "Azure Landing Zone Assessment Tool",
+  "short_name": "ALZ Assessment",
+  "description": "Interactive web-based tool for Azure Landing Zone assessments",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0078d4",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "https://docs.microsoft.com/favicon.ico",
+      "sizes": "16x16",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "https://docs.microsoft.com/favicon.ico",
+      "sizes": "32x32",
+      "type": "image/x-icon"
+    }
+  ],
+  "categories": ["productivity", "business"],
+  "screenshots": [
+    {
+      "src": "https://via.placeholder.com/540x720/0078d4/ffffff?text=ALZ+Assessment",
+      "sizes": "540x720",
+      "type": "image/png"
+    }
+  ]
+}

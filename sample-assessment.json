@@ -1,0 +1,24 @@
+{
+  "assessmentType": "alz",
+  "language": "en",
+  "exportDate": "2025-10-12T12:00:00.000Z",
+  "totalItems": 243,
+  "completedItems": 3,
+  "items": [
+    {
+      "id": "A01.01",
+      "status": "Compliant",
+      "comments": "We use a single Entra tenant for all Azure resources"
+    },
+    {
+      "id": "A02.03",
+      "status": "Non-Compliant",
+      "comments": "Need to set up Cost Management views"
+    },
+    {
+      "id": "A03.01", 
+      "status": "Not Applicable",
+      "comments": "We don't use Enterprise Agreement"
+    }
+  ]
+}
