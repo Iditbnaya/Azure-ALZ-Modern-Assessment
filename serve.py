@@ -8,6 +8,9 @@ import http.server
 import socketserver
 import os
 import sys
+import webbrowser
+import threading
+import time
 from pathlib import Path
 
 class CORSHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
@@ -30,6 +33,20 @@ class CORSHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
         """Custom log format."""
         print(f"[{self.address_string()}] {format % args}")
 
+def open_browser(url, delay=3):
+    """Open browser after a delay."""
+    def delayed_open():
+        time.sleep(delay)
+        try:
+            webbrowser.open(url)
+            print(f"🌐 Opened browser at {url}")
+        except Exception as e:
+            print(f"⚠️  Could not open browser automatically: {e}")
+            print(f"Please visit manually: {url}")
+    
+    # Start browser opening in background thread
+    threading.Thread(target=delayed_open, daemon=True).start()
+
 def main():
     """Start the development server."""
     # Serve from the web-assessment directory
@@ -51,13 +68,19 @@ def main():
     # Check if port is available
     try:
         with socketserver.TCPServer((HOST, PORT), CORSHTTPRequestHandler) as httpd:
+            app_url = f"http://{HOST}:{PORT}/index.html"
+            
             print(f"🚀 ALZ Assessment Tool Development Server")
             print(f"📡 Server starting at http://{HOST}:{PORT}/")
             print(f"🧪 Test page available at http://{HOST}:{PORT}/test.html")
-            print(f"📊 Main app available at http://{HOST}:{PORT}/index.html")
+            print(f"📊 Main app available at {app_url}")
+            print(f"🌐 Opening browser in 3 seconds...")
             print(f"")
             print(f"Press Ctrl+C to stop the server")
             print(f"{'='*60}")
+            
+            # Open browser automatically
+            open_browser(app_url, delay=3)
             
             try:
                 httpd.serve_forever()

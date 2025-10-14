@@ -20,6 +20,34 @@ function Test-Port {
     }
 }
 
+# Function to open browser
+function Start-Browser {
+    param(
+        [string]$Url,
+        [int]$DelaySeconds = 3
+    )
+    
+    Write-Host "🌐 Opening browser in $DelaySeconds seconds..." -ForegroundColor Green
+    
+    # Start browser in background after delay
+    Start-Job -ScriptBlock {
+        param($Url, $Delay)
+        Start-Sleep $Delay
+        try {
+            Start-Process $Url
+        }
+        catch {
+            # Fallback for different systems
+            try {
+                & cmd /c start $Url
+            }
+            catch {
+                Write-Host "Could not open browser automatically. Please visit: $Url" -ForegroundColor Yellow
+            }
+        }
+    } -ArgumentList $Url, $DelaySeconds | Out-Null
+}
+
 # Function to start simple HTTP server
 function Start-WebServer {
     param(
@@ -36,6 +64,10 @@ function Start-WebServer {
     Write-Host ""
     Write-Host "Press Ctrl+C to stop the server" -ForegroundColor White
     Write-Host "=" * 60 -ForegroundColor Gray
+    
+    # Open browser automatically
+    $appUrl = "http://${HostName}:${Port}/index.html"
+    Start-Browser -Url $appUrl -DelaySeconds 3
     
     # Use Python if available, otherwise use PowerShell's built-in capabilities
     if (Get-Command python -ErrorAction SilentlyContinue) {

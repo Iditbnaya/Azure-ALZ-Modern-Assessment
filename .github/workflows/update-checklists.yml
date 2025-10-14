@@ -1,18 +1,12 @@
 name: Update Assessment Tool Checklists
 
 # This workflow updates your ALZ Assessment Tool with the latest checklists
-# from your synced fork of the review-checklists repository
+# directly from the upstream Azure/review-checklists repository
 
 on:
-  # Run after the upstream sync completes
-  workflow_run:
-    workflows: ["Sync Fork with Upstream"]
-    types:
-      - completed
-  
-  # Schedule: Run monthly after upstream sync (1st day at 3 AM UTC)
+  # Schedule: Run weekly on Mondays at 3 AM UTC to get latest updates
   schedule:
-    - cron: '0 3 1 * *'
+    - cron: '0 3 * * 1'
   
   # Allow manual trigger
   workflow_dispatch:
@@ -22,6 +16,11 @@ on:
         required: false
         default: true
         type: boolean
+      checklist_types:
+        description: 'Specific checklist types to update (comma-separated, e.g., aks,appsvc,security)'
+        required: false
+        default: ''
+        type: string
 
 jobs:
   update-checklists:
@@ -44,45 +43,64 @@ jobs:
           BACKUP_DIR="backups/checklists-$(date +%Y-%m-%d-%H%M)"
           mkdir -p "$BACKUP_DIR"
           
-          if [ -d "review-checklists/checklists" ]; then
-            cp -r review-checklists/checklists/* "$BACKUP_DIR/" 2>/dev/null || true
+          if [ -d "web-assessment/review-checklists/checklists" ]; then
+            cp -r web-assessment/review-checklists/checklists/* "$BACKUP_DIR/" 2>/dev/null || true
             echo "✅ Backup created at: $BACKUP_DIR"
             echo "BACKUP_DIR=$BACKUP_DIR" >> $GITHUB_ENV
           else
             echo "ℹ️ No existing checklists to backup"
           fi
 
-      - name: Download latest checklists from your fork
+      - name: Download latest checklists from Azure/review-checklists
         run: |
-          # Get your GitHub username from the repository
-          GITHUB_USERNAME="${{ github.repository_owner }}"
-          
-          echo "📥 Downloading checklists from: $GITHUB_USERNAME/review-checklists"
+          echo "📥 Downloading checklists from: Azure/review-checklists"
           
           # Create checklists directory
-          mkdir -p review-checklists/checklists
+          mkdir -p web-assessment/review-checklists/checklists
           
-          # Use GitHub API to get all checklist files
-          API_URL="https://api.github.com/repos/$GITHUB_USERNAME/review-checklists/contents/checklists"
+          # Use GitHub API to get all checklist files directly from Azure repository
+          API_URL="https://api.github.com/repos/Azure/review-checklists/contents/checklists"
           
-          # Download the file list
-          curl -s "$API_URL" | jq -r '.[] | select(.name | endswith(".json")) | .download_url' > checklist_urls.txt
+          # Parse input for specific checklist types
+          CHECKLIST_FILTER=""
+          if [ -n "${{ inputs.checklist_types }}" ]; then
+            CHECKLIST_FILTER="${{ inputs.checklist_types }}"
+            echo "🎯 Filtering for specific checklists: $CHECKLIST_FILTER"
+          fi
+          
+          # Download the file list and filter for JSON files
+          if [ -n "$CHECKLIST_FILTER" ]; then
+            # Create filter pattern for specific checklist types
+            FILTER_PATTERN=$(echo "$CHECKLIST_FILTER" | sed 's/,/\\|/g')
+            curl -s "$API_URL" | jq -r ".[] | select(.name | endswith(\".json\") and test(\"($FILTER_PATTERN)_checklist\")) | .download_url" > checklist_urls.txt
+          else
+            # Download all JSON checklist files
+            curl -s "$API_URL" | jq -r '.[] | select(.name | endswith(".json") and contains("_checklist")) | .download_url' > checklist_urls.txt
+          fi
           
           # Download each file
+          downloaded_count=0
           while IFS= read -r url; do
-            filename=$(basename "$url")
-            echo "⬇️ Downloading: $filename"
-            curl -s "$url" -o "review-checklists/checklists/$filename"
+            if [ -n "$url" ]; then
+              filename=$(basename "$url")
+              echo "⬇️ Downloading: $filename"
+              curl -s "$url" -o "web-assessment/review-checklists/checklists/$filename"
+              ((downloaded_count++))
+            fi
           done < checklist_urls.txt
           
-          # Count downloaded files
-          file_count=$(ls review-checklists/checklists/*.json 2>/dev/null | wc -l)
-          echo "✅ Downloaded $file_count checklist files"
+          echo "✅ Downloaded $downloaded_count checklist files from Azure/review-checklists"
+          
+          # Verify we have files
+          if [ $downloaded_count -eq 0 ]; then
+            echo "❌ No checklist files were downloaded"
+            exit 1
+          fi
 
       - name: Preserve custom AI Landing Zone checklist
         if: inputs.preserve_custom_ai == 'true' || inputs.preserve_custom_ai == ''
         run: |
-          CUSTOM_AI_FILE="review-checklists/checklists/ai_lz_checklist.en.json"
+          CUSTOM_AI_FILE="web-assessment/review-checklists/checklists/ai_lz_checklist.en.json"
           BACKUP_AI_FILE="$BACKUP_DIR/ai_lz_checklist.en.json"
           
           if [ -f "$BACKUP_AI_FILE" ] && [ -f "$CUSTOM_AI_FILE" ]; then
@@ -104,8 +122,10 @@ jobs:
           
           # Check if files are valid JSON
           invalid_files=0
-          for file in review-checklists/checklists/*.json; do
+          total_files=0
+          for file in web-assessment/review-checklists/checklists/*.json; do
             if [ -f "$file" ]; then
+              ((total_files++))
               if ! jq . "$file" > /dev/null 2>&1; then
                 echo "❌ Invalid JSON: $(basename "$file")"
                 ((invalid_files++))
@@ -116,10 +136,10 @@ jobs:
           done
           
           if [ $invalid_files -gt 0 ]; then
-            echo "❌ Found $invalid_files invalid JSON files"
+            echo "❌ Found $invalid_files invalid JSON files out of $total_files"
             exit 1
           else
-            echo "✅ All checklist files are valid JSON"
+            echo "✅ All $total_files checklist files are valid JSON"
           fi
 
       - name: Update checklist mapping in data-loader.js
@@ -136,10 +156,12 @@ jobs:
           let content = fs.readFileSync(dataLoaderPath, 'utf8');
           
           // Get list of available checklist files
-          const checklistDir = 'review-checklists/checklists';
+          const checklistDir = 'web-assessment/review-checklists/checklists';
           const files = fs.readdirSync(checklistDir)
             .filter(file => file.endsWith('_checklist.en.json'))
             .map(file => file.replace('_checklist.en.json', ''));
+          
+          console.log('✅ Found checklist types:', files);
           
           // Create mapping object
           const mapping = {
@@ -153,10 +175,16 @@ jobs:
               .join(' ')
               .replace(/([A-Z])/g, ' $1')
               .trim()
-              .replace(/\s+/g, ' ');
+              .replace(/\s+/g, ' ')
+              .replace(/Alz/, 'ALZ')
+              .replace(/Aks/, 'AKS')
+              .replace(/Ai/, 'AI')
+              .replace(/Api/, 'API');
             
             mapping[type] = displayName;
           });
+          
+          console.log('✅ Generated mapping:', mapping);
           
           // Create the new mapping string
           const mappingString = JSON.stringify(mapping, null, 12)
@@ -182,20 +210,24 @@ jobs:
           echo "=========================" >> update_summary.md
           echo "" >> update_summary.md
           echo "**Update Date:** $(date)" >> update_summary.md
-          echo "**Repository:** ${{ github.repository_owner }}/review-checklists" >> update_summary.md
+          echo "**Source Repository:** Azure/review-checklists" >> update_summary.md
           echo "" >> update_summary.md
           echo "**Files Updated:**" >> update_summary.md
           
-          file_count=$(ls review-checklists/checklists/*.json 2>/dev/null | wc -l)
+          file_count=$(ls web-assessment/review-checklists/checklists/*.json 2>/dev/null | wc -l)
           echo "- Total checklist files: $file_count" >> update_summary.md
           
           if [ -n "$BACKUP_DIR" ]; then
             echo "- Backup location: $BACKUP_DIR" >> update_summary.md
           fi
           
+          if [ -n "${{ inputs.checklist_types }}" ]; then
+            echo "- Filtered for types: ${{ inputs.checklist_types }}" >> update_summary.md
+          fi
+          
           echo "" >> update_summary.md
           echo "**Available Assessment Types:**" >> update_summary.md
-          for file in review-checklists/checklists/*_checklist.en.json; do
+          for file in web-assessment/review-checklists/checklists/*_checklist.en.json; do
             if [ -f "$file" ]; then
               basename=$(basename "$file" _checklist.en.json)
               echo "- $basename" >> update_summary.md
@@ -215,11 +247,18 @@ jobs:
           
           # Check if there are changes to commit
           if git diff --staged --quiet; then
-            echo "ℹ️ No changes to commit"
+            echo "ℹ️ No changes to commit - checklists are already up to date"
           else
-            git commit -m "🔄 Update checklists from Azure/review-checklists ($(date +%Y-%m-%d))"
+            # Create descriptive commit message
+            COMMIT_MSG="🔄 Update checklists from Azure/review-checklists ($(date +%Y-%m-%d))"
+            if [ -n "${{ inputs.checklist_types }}" ]; then
+              COMMIT_MSG="$COMMIT_MSG - Types: ${{ inputs.checklist_types }}"
+            fi
+            
+            git commit -m "$COMMIT_MSG"
             git push
             echo "✅ Changes committed and pushed"
+            echo "commit_made=true" >> $GITHUB_ENV
           fi
 
       - name: Create or update summary issue
@@ -234,10 +273,10 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               state: 'open',
-              labels: ['checklist-update']
+              labels: ['checklist-update', 'automated']
             });
             
-            const title = `📋 Monthly Checklist Update - ${new Date().toISOString().slice(0, 7)}`;
+            const title = `📋 Checklist Update - ${new Date().toISOString().slice(0, 10)}`;
             
             if (issues.data.length > 0) {
               // Update existing issue
@@ -248,15 +287,15 @@ jobs:
                 title: title,
                 body: summary
               });
-              console.log('✅ Updated existing summary issue');
+              console.log('✅ Updated existing summary issue #' + issues.data[0].number);
             } else {
               // Create new issue
-              await github.rest.issues.create({
+              const issue = await github.rest.issues.create({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 title: title,
                 body: summary,
-                labels: ['checklist-update']
+                labels: ['checklist-update', 'automated']
               });
-              console.log('✅ Created new summary issue');
+              console.log('✅ Created new summary issue #' + issue.data.number);
             }

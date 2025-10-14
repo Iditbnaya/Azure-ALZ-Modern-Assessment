@@ -58,17 +58,7 @@ ALZAssessment/
 1. **Clone the Repository**
    ```bash
    git clone https://github.com/iditbnaya/ALZAssessment.git
-   cd ALZAssessment
-   ```
-
-2. **Fork Azure Review Checklists**
-   - Fork https://github.com/Azure/review-checklists to your account
-   - This enables automated checklist updates
-
-3. **Configure Git**
-   ```bash
-   git config user.name "Your Name"
-   git config user.email "your.email@domain.com"
+   cd AZURE-ALZ-MODERN-ASSESMENT
    ```
 
 4. **Enable GitHub Actions**

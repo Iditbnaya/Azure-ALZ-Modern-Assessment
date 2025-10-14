@@ -1,16 +1,16 @@
 name: Manual Checklist Sync
 
-# Quick manual trigger for immediate checklist updates
+# Quick manual trigger for immediate checklist updates from Azure/review-checklists
 # Use this when you need to sync checklists outside the monthly schedule
 
 on:
   workflow_dispatch:
     inputs:
-      sync_fork_first:
-        description: 'Sync fork with upstream first'
+      checklist_types:
+        description: 'Specific checklist types to sync (comma-separated, e.g., aks,appsvc,security). Leave empty for all.'
         required: false
-        default: true
-        type: boolean
+        default: ''
+        type: string
       preserve_custom_ai:
         description: 'Preserve custom AI Landing Zone checklist'
         required: false
@@ -27,41 +27,20 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Trigger fork sync
-        if: inputs.sync_fork_first == 'true' || inputs.sync_fork_first == ''
-        uses: actions/github-script@v7
-        with:
-          script: |
-            // Trigger the upstream sync workflow first
-            await github.rest.actions.createWorkflowDispatch({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: 'sync-upstream.yml',
-              ref: 'main',
-              inputs: {
-                force_sync: 'true'
-              }
-            });
-            console.log('✅ Triggered upstream sync workflow');
-
-      - name: Wait for upstream sync
-        if: inputs.sync_fork_first == 'true' || inputs.sync_fork_first == ''
-        run: |
-          echo "⏳ Waiting 30 seconds for upstream sync to complete..."
-          sleep 30
-
       - name: Trigger checklist update
         uses: actions/github-script@v7
         with:
           script: |
-            // Trigger the checklist update workflow
+            // Trigger the checklist update workflow directly
             await github.rest.actions.createWorkflowDispatch({
               owner: context.repo.owner,
               repo: context.repo.repo,
               workflow_id: 'update-checklists.yml',
               ref: 'main',
               inputs: {
-                preserve_custom_ai: '${{ inputs.preserve_custom_ai }}'
+                checklist_types: '${{ inputs.checklist_types }}',
+                preserve_custom_ai: '${{ inputs.preserve_custom_ai }}',
+                create_backup: '${{ inputs.create_backup }}'
               }
             });
             console.log('✅ Triggered checklist update workflow');
@@ -72,8 +51,9 @@ jobs:
           echo "📅 Triggered at: $(date)"
           echo ""
           echo "Options selected:"
-          echo "- Sync fork first: ${{ inputs.sync_fork_first }}"
+          echo "- Checklist types: ${{ inputs.checklist_types || 'all' }}"
           echo "- Preserve custom AI: ${{ inputs.preserve_custom_ai }}"
           echo "- Create backup: ${{ inputs.create_backup }}"
           echo ""
+          echo "📋 Syncing directly from Azure/review-checklists repository"
           echo "Check the Actions tab for progress updates."

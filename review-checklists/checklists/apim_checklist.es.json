@@ -1,0 +1,519 @@
+{
+    "$schema": "checklist.schema.json",
+    "categories": [
+        {
+            "name": "Gestión de identidades y accesos"
+        },
+        {
+            "name": "Topología y conectividad de red"
+        },
+        {
+            "name": "Seguridad"
+        },
+        {
+            "name": "Administración"
+        },
+        {
+            "name": "Gobernanza"
+        },
+        {
+            "name": "Automatización de plataformas y DevOps"
+        }
+    ],
+    "items": [
+        {
+            "category": "Gobernanza",
+            "guid": "d7941d4a-7b6f-458f-8714-2f8f8c059ad4",
+            "link": "https://learn.microsoft.com/azure/api-management/api-management-error-handling-policies",
+            "service": "APIM",
+            "severity": "Medio",
+            "subcategory": "Prácticas recomendadas de desarrollo",
+            "text": "Implementar una política de control de errores a nivel global",
+            "waf": "Operaciones"
+        },
+        {
+            "category": "Gobernanza",
+            "guid": "0b0c0765-ff37-4369-90bd-3eb23ce71b08",
+            "link": "https://learn.microsoft.com/azure/api-management/set-edit-policies?tabs=form#use-base-element-to-set-policy-evaluation-order",
+            "service": "APIM",
+            "severity": "Medio",
+            "subcategory": "Prácticas recomendadas de desarrollo",
+            "text": "Asegúrese de que todas las políticas de API incluyan un <base/> elemento.",
+            "waf": "Operaciones"
+        },
+        {
+            "category": "Gobernanza",
+            "guid": "a5c45b03-93b6-42fe-b16b-8fccb6a79902",
+            "link": "https://learn.microsoft.com/azure/api-management/policy-fragments",
+            "service": "APIM",
+            "severity": "Medio",
+            "subcategory": "Prácticas recomendadas de desarrollo",
+            "text": "Uso de fragmentos de políticas para evitar repetir las mismas definiciones de políticas en varias API",
+            "waf": "Operaciones"
+        },
+        {
+            "category": "Gobernanza",
+            "guid": "c3818a95-6ff3-4474-88dc-e809b46dad6a",
+            "link": "https://learn.microsoft.com/azure/api-management/monetization-support",
+            "service": "APIM",
+            "severity": "Medio",
+            "subcategory": "Monetización",
+            "text": "Si planeas monetizar tus API, revisa el artículo \"Soporte de monetización\" para conocer las prácticas recomendadas",
+            "waf": "Operaciones"
+        },
+        {
+            "category": "Gobernanza",
+            "guid": "a7d0840a-c8c4-4e83-adec-5ca578eb4049",
+            "link": "https://learn.microsoft.com/azure/api-management/api-management-howto-use-azure-monitor#resource-logs",
+            "service": "APIM",
+            "severity": "Alto",
+            "subcategory": "Monitorización",
+            "text": "Habilitación de la configuración de diagnóstico para exportar registros a Azure Monitor",
+            "waf": "Operaciones"
+        },
+        {
+            "category": "Gobernanza",
+            "guid": "8691fa38-45ed-4299-a247-fecd98d35deb",
+            "link": "https://learn.microsoft.com/azure/api-management/api-management-howto-app-insights",
+            "service": "APIM",
+            "severity": "Medio",
+            "subcategory": "Monitorización",
+            "text": "Habilitación de Application Insights para obtener telemetría más detallada",
+            "waf": "Operaciones"
+        },
+        {
+            "category": "Gobernanza",
+            "guid": "55fd27bb-76ac-4a91-bc37-049e885be6b7",
+            "link": "https://learn.microsoft.com/azure/api-management/api-management-howto-use-azure-monitor",
+            "service": "APIM",
+            "severity": "Alto",
+            "subcategory": "Monitorización",
+            "text": "Configurar alertas sobre las métricas más críticas",
+            "waf": "Operaciones"
+        },
+        {
+            "category": "Gestión de identidades y accesos",
+            "guid": "39460bdb-156f-4dc2-a87f-1e8c11ab0998",
+            "link": "https://learn.microsoft.com/security/benchmark/azure/baselines/api-management-security-baseline?toc=%2Fazure%2Fapi-management%2F&bc=%2Fazure%2Fapi-management%2Fbreadcrumb%2Ftoc.json#certificate-management-in-azure-key-vault",
+            "service": "APIM",
+            "severity": "Alto",
+            "subcategory": "Protección de datos",
+            "text": "Asegúrese de que los certificados SSL personalizados se almacenan en Azure Key Vault para que se pueda acceder a ellos y actualizarlos de forma segura",
+            "waf": "Seguridad"
+        },
+        {
+            "category": "Gestión de identidades y accesos",
+            "guid": "e9217997-5f6c-479d-8576-8f2adf706ec8",
+            "link": "https://learn.microsoft.com/security/benchmark/azure/baselines/api-management-security-baseline?toc=%2Fazure%2Fapi-management%2F&bc=%2Fazure%2Fapi-management%2Fbreadcrumb%2Ftoc.json#azure-ad-authentication-required-for-data-plane-access",
+            "service": "APIM",
+            "severity": "Alto",
+            "subcategory": "Identidad",
+            "text": "Protección de las solicitudes entrantes a las API (plano de datos) con Azure AD",
+            "waf": "Seguridad"
+        },
+        {
+            "category": "Gestión de identidades y accesos",
+            "guid": "5e5f64ba-c90e-480e-8888-398d96cf0bfb",
+            "link": "https://learn.microsoft.com/azure/api-management/api-management-howto-aad",
+            "service": "APIM",
+            "severity": "Medio",
+            "subcategory": "Identidad",
+            "text": "Usar el identificador de Microsoft Entra para autenticar a los usuarios en el Portal para desarrolladores",
+            "waf": "Seguridad"
+        },
+        {
+            "category": "Gestión de identidades y accesos",
+            "guid": "f8e574ce-280f-49c8-b2ef-68279b081cf3",
+            "link": "https://learn.microsoft.com/azure/api-management/api-management-howto-create-groups",
+            "service": "APIM",
+            "severity": "Medio",
+            "subcategory": "Acceso privilegiado",
+            "text": "Crear grupos adecuados para controlar la visibilidad de los productos",
+            "waf": "Seguridad"
+        },
+        {
+            "category": "Administración",
+            "guid": "06862505-2d9a-4874-9491-2837b00a3475",
+            "link": "https://learn.microsoft.com/azure/api-management/backends",
+            "service": "APIM",
+            "severity": "Medio",
+            "subcategory": "Prácticas recomendadas",
+            "text": "Utilice la función Backends para eliminar las configuraciones redundantes de back-end de la API",
+            "waf": "Operaciones"
+        },
+        {
+            "category": "Administración",
+            "guid": "03b125d5-b69b-4739-b7fd-84b86da4933e",
+            "link": "https://learn.microsoft.com/azure/api-management/api-management-howto-properties?tabs=azure-portal",
+            "service": "APIM",
+            "severity": "Medio",
+            "subcategory": "Prácticas recomendadas",
+            "text": "Usar valores con nombre para almacenar valores comunes que se pueden usar en directivas",
+            "waf": "Operaciones"
+        },
+        {
+            "category": "Administración",
+            "guid": "beae759e-4ddb-4326-bf26-47f87d3454b6",
+            "link": "https://learn.microsoft.com/azure/api-management/api-management-howto-deploy-multi-region",
+            "service": "APIM",
+            "severity": "Medio",
+            "subcategory": "Continuidad del negocio y recuperación ante desastres",
+            "text": "En el caso de la recuperación ante desastres, aproveche el nivel premium con implementaciones escaladas en dos o más regiones para un acuerdo de nivel de servicio del 99,99 %",
+            "waf": "Fiabilidad"
+        },
+        {
+            "category": "Administración",
+            "guid": "9c8d1664-dd9a-49d4-bd83-950af0af4044",
+            "link": "https://learn.microsoft.com/azure/api-management/high-availability",
+            "service": "APIM",
+            "severity": "Medio",
+            "subcategory": "Continuidad del negocio y recuperación ante desastres",
+            "text": "Implemente al menos una unidad en dos o más zonas de disponibilidad para obtener un SLA aumentado del 99,99 %",
+            "waf": "Fiabilidad"
+        },
+        {
+            "category": "Administración",
+            "guid": "8d2db6e8-85c6-4118-a52c-ae76a4f27934",
+            "link": "https://learn.microsoft.com/security/benchmark/azure/baselines/api-management-security-baseline?toc=%2Fazure%2Fapi-management%2F&bc=%2Fazure%2Fapi-management%2Fbreadcrumb%2Ftoc.json#service-native-backup-capability",
+            "service": "APIM",
+            "severity": "Alto",
+            "subcategory": "Continuidad del negocio y recuperación ante desastres",
+            "text": "Asegúrese de que haya una rutina de copia de seguridad automatizada",
+            "waf": "Fiabilidad"
+        },
+        {
+            "category": "Administración",
+            "guid": "43e60b94-7bca-43a2-aadf-efb04d63a485",
+            "link": "https://learn.microsoft.com/azure/api-management/retry-policy",
+            "service": "APIM",
+            "severity": "Medio",
+            "subcategory": "Conmutación por error y almacenamiento en caché",
+            "text": "Use directivas para agregar una dirección URL de back-end de conmutación por error y el almacenamiento en caché para reducir las llamadas con errores.",
+            "waf": "Fiabilidad"
+        },
+        {
+            "category": "Administración",
+            "guid": "f96ddac5-77ec-4fa9-8833-4327f052059e",
+            "link": "https://learn.microsoft.com/azure/api-management/api-management-howto-cache-external",
+            "severity": "Medio",
+            "subcategory": "Rendimiento y escalabilidad",
+            "text": "Considere la posibilidad de usar una directiva de caché externa para las API que pueden beneficiarse del almacenamiento en caché",
+            "training": "https://learn.microsoft.com/training/modules/improve-api-performance-with-apim-caching-policy/"
+        },
+        {
+            "category": "Administración",
+            "guid": "8210699f-8d43-45c2-8f19-57e54134bd8f",
+            "link": "https://learn.microsoft.com/azure/api-management/api-management-howto-log-event-hubs",
+            "service": "APIM",
+            "severity": "Bajo",
+            "subcategory": "Rendimiento y escalabilidad",
+            "text": "Si necesita iniciar sesión en niveles de alto rendimiento, tenga en cuenta la directiva de Event Hubs",
+            "waf": "Operaciones"
+        },
+        {
+            "category": "Administración",
+            "guid": "121bfc39-fa7b-4096-b93b-ab56c1bc0bed",
+            "link": "https://learn.microsoft.com/azure/api-management/api-management-sample-flexible-throttling",
+            "service": "APIM",
+            "severity": "Medio",
+            "subcategory": "Rendimiento y escalabilidad",
+            "text": "Aplicación de directivas de limitación para controlar el número de solicitudes por segundo",
+            "training": "https://learn.microsoft.com/training/modules/protect-apis-on-api-management/",
+            "waf": "Rendimiento"
+        },
+        {
+            "category": "Administración",
+            "guid": "bb5f356b-3daf-47a2-a9ee-867a8100bbd5",
+            "link": "https://learn.microsoft.com/azure/api-management/api-management-howto-autoscale",
+            "service": "APIM",
+            "severity": "Medio",
+            "subcategory": "Rendimiento y escalabilidad",
+            "text": "Configurar el escalado automático para escalar horizontalmente el número de instancias cuando aumenta la carga",
+            "waf": "Rendimiento"
+        },
+        {
+            "category": "Administración",
+            "guid": "84b94abb-59b6-4b9d-8587-3413669468e8",
+            "link": "https://learn.microsoft.com/azure/api-management/api-management-howto-provision-self-hosted-gateway",
+            "service": "APIM",
+            "severity": "Medio",
+            "subcategory": "Rendimiento y escalabilidad",
+            "text": "Implemente puertas de enlace autohospedadas en las que Azure no tenga una región cercana a las API de back-end.",
+            "waf": "Rendimiento"
+        },
+        {
+            "category": "Administración",
+            "guid": "1fe8db45-a017-4888-8c4d-4422583cfae0",
+            "link": "https://learn.microsoft.com/azure/api-management/upgrade-and-scale#upgrade-and-scale",
+            "service": "APIM",
+            "severity": "Medio",
+            "subcategory": "Nivel Premium",
+            "text": "Use el nivel premium para las cargas de trabajo de producción.",
+            "waf": "Fiabilidad"
+        },
+        {
+            "category": "Administración",
+            "guid": "1b8d68a4-66cd-44d5-ba94-3ee94440e8d6",
+            "link": "https://learn.microsoft.com/azure/api-management/api-management-howto-deploy-multi-region#-route-api-calls-to-regional-backend-services",
+            "service": "APIM",
+            "severity": "Medio",
+            "subcategory": "Enrutamiento de solicitudes",
+            "text": "En el modelo de varias regiones, use directivas para enrutar las solicitudes a los back-ends regionales en función de la disponibilidad o la latencia.",
+            "waf": "Fiabilidad"
+        },
+        {
+            "category": "Administración",
+            "guid": "46f07d33-ef9a-44e8-8f98-67c097c5d8cd",
+            "link": "https://learn.microsoft.com/azure/azure-resource-manager/management/azure-subscription-service-limits#api-management-limits",
+            "service": "APIM",
+            "severity": "Alto",
+            "subcategory": "Límites de recursos",
+            "text": "Tenga en cuenta los límites de APIM",
+            "waf": "Fiabilidad"
+        },
+        {
+            "category": "Administración",
+            "guid": "10f58602-f0f9-4d77-972a-956f6e0f2600",
+            "link": "https://learn.microsoft.com/en-us/azure/api-management/self-hosted-gateway-overview",
+            "service": "APIM",
+            "severity": "Alto",
+            "subcategory": "Autohospedado",
+            "text": "Asegúrese de que las implementaciones de puerta de enlace autohospedadas sean resistentes.",
+            "waf": "Fiabilidad"
+        },
+        {
+            "category": "Topología y conectividad de red",
+            "guid": "7519e385-a88b-4d34-966b-6269d686e890",
+            "link": "https://learn.microsoft.com/azure/api-management/front-door-api-management",
+            "service": "APIM",
+            "severity": "Medio",
+            "subcategory": "Conectividad",
+            "text": "Uso de Azure Front Door delante de APIM para la implementación en varias regiones",
+            "waf": "Rendimiento"
+        },
+        {
+            "category": "Topología y conectividad de red",
+            "guid": "cd45c90e-7690-4753-930b-bf290c69c074",
+            "link": "https://learn.microsoft.com/security/benchmark/azure/baselines/api-management-security-baseline?toc=%2Fazure%2Fapi-management%2F&bc=%2Fazure%2Fapi-management%2Fbreadcrumb%2Ftoc.json#virtual-network-integration",
+            "service": "APIM",
+            "severity": "Medio",
+            "subcategory": "Seguridad",
+            "text": "Implementación del servicio dentro de una red virtual (VNet)",
+            "waf": "Seguridad"
+        },
+        {
+            "category": "Topología y conectividad de red",
+            "guid": "02661582-b3d1-48d1-9d7b-c6a918a0ca33",
+            "link": "https://learn.microsoft.com/security/benchmark/azure/baselines/api-management-security-baseline?toc=%2Fazure%2Fapi-management%2F&bc=%2Fazure%2Fapi-management%2Fbreadcrumb%2Ftoc.json#network-security-group-support",
+            "service": "APIM",
+            "severity": "Medio",
+            "subcategory": "Seguridad",
+            "text": "Implemente grupos de seguridad de red (NSG) en las subredes para restringir o supervisar el tráfico hacia/desde APIM.",
+            "waf": "Seguridad"
+        },
+        {
+            "category": "Topología y conectividad de red",
+            "guid": "67437a28-2721-4a2c-becd-caa54c8237a5",
+            "link": "https://learn.microsoft.com/security/benchmark/azure/baselines/api-management-security-baseline?toc=%2Fazure%2Fapi-management%2F&bc=%2Fazure%2Fapi-management%2Fbreadcrumb%2Ftoc.json#azure-private-link",
+            "service": "APIM",
+            "severity": "Medio",
+            "subcategory": "Seguridad",
+            "text": "Implemente puntos de conexión privados para filtrar el tráfico entrante cuando APIM no se implemente en una red virtual.",
+            "waf": "Seguridad"
+        },
+        {
+            "category": "Topología y conectividad de red",
+            "guid": "d698adbd-3288-44cb-b10a-9b572da395ae",
+            "link": "https://learn.microsoft.com/security/benchmark/azure/baselines/api-management-security-baseline?toc=%2Fazure%2Fapi-management%2F&bc=%2Fazure%2Fapi-management%2Fbreadcrumb%2Ftoc.json#disable-public-network-access",
+            "service": "APIM",
+            "severity": "Alto",
+            "subcategory": "Seguridad",
+            "text": "Deshabilitar el acceso a la red pública",
+            "waf": "Seguridad"
+        },
+        {
+            "category": "Automatización de plataformas y DevOps",
+            "guid": "0674d750-0c6f-4ac0-8717-ceec04d0bdbd",
+            "link": "https://learn.microsoft.com/azure/api-management/automation-manage-api-management",
+            "service": "APIM",
+            "severity": "Medio",
+            "subcategory": "Automatización",
+            "text": "Simplifique la administración con scripts de automatización de PowerShell",
+            "waf": "Operaciones"
+        },
+        {
+            "category": "Automatización de plataformas y DevOps",
+            "guid": "c385bfcd-49fd-4786-81ba-cedbb4c57345",
+            "link": "https://learn.microsoft.com/azure/cloud-adoption-framework/scenarios/app-platform/api-management/platform-automation-and-devops#design-recommendations",
+            "service": "APIM",
+            "severity": "Medio",
+            "subcategory": "Prácticas recomendadas",
+            "text": "Configure APIM a través de la infraestructura como código. Revise las prácticas recomendadas de DevOps desde el acelerador de zonas de aterrizaje de API de Cloud Adaption Framework",
+            "waf": "Operaciones"
+        },
+        {
+            "category": "Automatización de plataformas y DevOps",
+            "guid": "6c3a27c0-197f-426c-9ffa-86fed51d9ab6",
+            "link": "https://learn.microsoft.com/azure/api-management/visual-studio-code-tutorial",
+            "service": "APIM",
+            "severity": "Medio",
+            "subcategory": "Prácticas recomendadas",
+            "text": "Promover el uso de la extensión APIM de Visual Studio Code para un desarrollo de API más rápido",
+            "waf": "Operaciones"
+        },
+        {
+            "category": "Automatización de plataformas y DevOps",
+            "guid": "354f1c03-8112-4965-85ad-c0074bddf231",
+            "link": "https://learn.microsoft.com/azure/api-management/devops-api-development-templates",
+            "service": "APIM",
+            "severity": "Medio",
+            "subcategory": "DevOps (Operaciones de desarrollo)",
+            "text": "Implemente DevOps y CI/CD en su flujo de trabajo",
+            "waf": "Operaciones"
+        },
+        {
+            "category": "Seguridad",
+            "guid": "b6439493-426a-45f3-9697-cf65baee208d",
+            "link": "https://learn.microsoft.com/azure/api-management/api-management-howto-mutual-certificates-for-clients",
+            "service": "APIM",
+            "severity": "Medio",
+            "subcategory": "Apis",
+            "text": "API seguras mediante la autenticación de certificados de cliente",
+            "waf": "Seguridad"
+        },
+        {
+            "category": "Seguridad",
+            "guid": "2a67d143-1033-4c0a-8732-680896478f08",
+            "link": "https://learn.microsoft.com/azure/api-management/api-management-howto-mutual-certificates",
+            "service": "APIM",
+            "severity": "Medio",
+            "subcategory": "Apis",
+            "text": "Servicios de back-end seguros mediante la autenticación de certificados de cliente",
+            "waf": "Seguridad"
+        },
+        {
+            "category": "Seguridad",
+            "guid": "074435f5-4a46-41ac-b521-d6114cb5d845",
+            "link": "https://learn.microsoft.com/azure/api-management/mitigate-owasp-api-threats",
+            "service": "APIM",
+            "severity": "Medio",
+            "subcategory": "Apis",
+            "text": "Revise el artículo \"Recomendaciones para mitigar las 10 principales amenazas de seguridad de la API de OWASP\" y compruebe qué se aplica a sus API",
+            "waf": "Seguridad"
+        },
+        {
+            "category": "Seguridad",
+            "guid": "5507c4b8-a7f8-41d6-9661-418c987100c9",
+            "link": "https://learn.microsoft.com/azure/api-management/authorizations-overview",
+            "service": "APIM",
+            "severity": "Medio",
+            "subcategory": "Apis",
+            "text": "Utilice la función Autorizaciones para simplificar la administración del token de OAuth 2.0 para las API de back-end",
+            "waf": "Seguridad"
+        },
+        {
+            "category": "Seguridad",
+            "guid": "2deee033-b906-4bc2-9f26-c8d3699fe091",
+            "link": "https://learn.microsoft.com/azure/api-management/api-management-howto-manage-protocols-ciphers",
+            "service": "APIM",
+            "severity": "Alto",
+            "subcategory": "Cifras",
+            "text": "Utilice la versión más reciente de TLS al cifrar la información en tránsito. Deshabilite los protocolos y cifrados obsoletos e innecesarios cuando sea posible.",
+            "waf": "Seguridad"
+        },
+        {
+            "category": "Seguridad",
+            "guid": "f8af3d94-1d2b-4070-846f-849197524258",
+            "link": "https://learn.microsoft.com/security/benchmark/azure/baselines/api-management-security-baseline?toc=%2Fazure%2Fapi-management%2F&bc=%2Fazure%2Fapi-management%2Fbreadcrumb%2Ftoc.json#im-8-restrict-the-exposure-of-credential-and-secrets",
+            "service": "APIM",
+            "severity": "Alto",
+            "subcategory": "Protección de datos",
+            "text": "Asegúrese de que los secretos (valores con nombre) se almacenan en Azure Key Vault para que se pueda acceder a ellos y actualizarlos de forma segura",
+            "waf": "Seguridad"
+        },
+        {
+            "category": "Seguridad",
+            "guid": "791abd8b-7706-4e31-9569-afefde724be3",
+            "link": "https://learn.microsoft.com/security/benchmark/azure/baselines/api-management-security-baseline?toc=%2Fazure%2Fapi-management%2F&bc=%2Fazure%2Fapi-management%2Fbreadcrumb%2Ftoc.json#managed-identities",
+            "service": "APIM",
+            "severity": "Medio",
+            "subcategory": "Identidades",
+            "text": "Uso de identidades administradas para autenticarse en otros recursos de Azure siempre que sea posible",
+            "waf": "Seguridad"
+        },
+        {
+            "category": "Seguridad",
+            "guid": "220c4ca6-6688-476b-b2b5-425a78e6fb87",
+            "link": "https://learn.microsoft.com/security/benchmark/azure/baselines/api-management-security-baseline?toc=%2Fazure%2Fapi-management%2F&bc=%2Fazure%2Fapi-management%2Fbreadcrumb%2Ftoc.json#ns-6-deploy-web-application-firewall",
+            "service": "APIM",
+            "severity": "Alto",
+            "subcategory": "Red",
+            "text": "Uso del firewall de aplicaciones web (WAF) mediante la implementación de Application Gateway delante de APIM",
+            "waf": "Seguridad"
+        }
+    ],
+    "metadata": {
+        "name": "Azure API Management Review",
+        "state": "GA",
+        "timestamp": "June 10, 2024",
+        "waf": "all"
+    },
+    "severities": [
+        {
+            "name": "Alto"
+        },
+        {
+            "name": "Medio"
+        },
+        {
+            "name": "Bajo"
+        }
+    ],
+    "status": [
+        {
+            "description": "Esta comprobación aún no se ha examinado",
+            "name": "No verificado"
+        },
+        {
+            "description": "Hay un elemento de acción asociado a esta comprobación",
+            "name": "Abrir"
+        },
+        {
+            "description": "Esta comprobación se ha verificado y no hay más elementos de acción asociados a ella",
+            "name": "Cumplido"
+        },
+        {
+            "description": "Recomendación entendida, pero no necesaria por los requisitos actuales",
+            "name": "No es necesario"
+        },
+        {
+            "description": "No aplicable para el diseño actual",
+            "name": "N/A"
+        }
+    ],
+    "waf": [
+        {
+            "name": "Fiabilidad"
+        },
+        {
+            "name": "Seguridad"
+        },
+        {
+            "name": "Costar"
+        },
+        {
+            "name": "Operaciones"
+        },
+        {
+            "name": "Rendimiento"
+        }
+    ],
+    "yesno": [
+        {
+            "name": "Sí"
+        },
+        {
+            "name": "No"
+        }
+    ]
+}
