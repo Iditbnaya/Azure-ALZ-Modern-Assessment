@@ -1,8 +1,5 @@
 # 🏗️ ALZ Assessment Tool
 
-[![GitHub Actions](https://github.com/your-username/ALZAssessment/workflows/Update%20Checklists/badge.svg)](https://github.com/your-username/ALZAssessment/actions)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-
 > **Interactive Azure Landing Zone Assessment Tool with Automated Checklist Updates**
 
 A comprehensive web-based assessment tool that helps organizations evaluate their Azure implementations against Microsoft's best practices and recommendations. Features automated monthly updates from the official Azure review checklists repository.
