@@ -29,6 +29,11 @@ class AssessmentManager {
             this.renderAssessmentItems();
         });
 
+        document.getElementById('wafFilter')?.addEventListener('change', (e) => {
+            this.currentFilters.waf = e.target.value;
+            this.renderAssessmentItems();
+        });
+
         document.getElementById('statusFilter')?.addEventListener('change', (e) => {
             this.currentFilters.status = e.target.value;
             this.renderAssessmentItems();
@@ -104,16 +109,17 @@ class AssessmentManager {
             });
         }
 
-        // Populate status filter
-        const statusFilter = document.getElementById('statusFilter');
-        if (statusFilter) {
-            statusFilter.innerHTML = '<option value="">All Statuses</option>';
-            const statuses = ['Not Reviewed', 'Compliant', 'Non-Compliant', 'Not Applicable'];
-            statuses.forEach(status => {
+        // Populate WAF pillar filter
+        const wafFilter = document.getElementById('wafFilter');
+        if (wafFilter) {
+            wafFilter.innerHTML = '<option value="">All Pillars</option>';
+            // Get unique WAF pillars from the checklist items
+            const wafPillars = [...new Set(checklist.items.map(item => item.waf).filter(waf => waf))].sort();
+            wafPillars.forEach(waf => {
                 const option = document.createElement('option');
-                option.value = status;
-                option.textContent = status;
-                statusFilter.appendChild(option);
+                option.value = waf;
+                option.textContent = waf;
+                wafFilter.appendChild(option);
             });
         }
 
@@ -297,21 +303,21 @@ class AssessmentManager {
                 
                 <div class="item-controls">
                     <div class="status-controls">
-                        <button class="status-btn ${item.status === 'Not Reviewed' ? 'active' : ''}" 
-                                data-status="Not Reviewed" data-item-id="${item.id}">
-                            Not Reviewed
+                        <button class="status-btn ${item.status === 'Not verified' ? 'active' : ''}" 
+                                data-status="Not verified" data-item-id="${item.id}">
+                            Not verified
                         </button>
-                        <button class="status-btn compliant ${item.status === 'Compliant' ? 'active' : ''}" 
-                                data-status="Compliant" data-item-id="${item.id}">
-                            <i class="fas fa-check"></i> Compliant
+                        <button class="status-btn fulfilled ${item.status === 'Fulfilled' ? 'active' : ''}" 
+                                data-status="Fulfilled" data-item-id="${item.id}">
+                            <i class="fas fa-check"></i> Fulfilled
                         </button>
-                        <button class="status-btn non-compliant ${item.status === 'Non-Compliant' ? 'active' : ''}" 
-                                data-status="Non-Compliant" data-item-id="${item.id}">
-                            <i class="fas fa-times"></i> Non-Compliant
+                        <button class="status-btn open ${item.status === 'Open' ? 'active' : ''}" 
+                                data-status="Open" data-item-id="${item.id}">
+                            <i class="fas fa-times"></i> Open
                         </button>
-                        <button class="status-btn not-applicable ${item.status === 'Not Applicable' ? 'active' : ''}" 
-                                data-status="Not Applicable" data-item-id="${item.id}">
-                            <i class="fas fa-minus"></i> Not Applicable
+                        <button class="status-btn not-required ${item.status === 'Not required' ? 'active' : ''}" 
+                                data-status="Not required" data-item-id="${item.id}">
+                            <i class="fas fa-minus"></i> Not required
                         </button>
                     </div>
                     
@@ -378,6 +384,7 @@ class AssessmentManager {
         // Reset filter controls
         document.getElementById('categoryFilter').value = '';
         document.getElementById('severityFilter').value = '';
+        document.getElementById('wafFilter').value = '';
         document.getElementById('statusFilter').value = '';
         
         const searchInput = document.getElementById('searchInput');
@@ -545,8 +552,8 @@ class AssessmentManager {
                     .item-text { margin: 10px 0; }
                     .item-meta { font-size: 0.8em; color: #666; }
                     .status { font-weight: bold; padding: 2px 8px; border-radius: 4px; }
-                    .status-compliant { background: #d4edda; color: #155724; }
-                    .status-non-compliant { background: #f8d7da; color: #721c24; }
+                    .status-fulfilled { background: #d4edda; color: #155724; }
+                    .status-open { background: #f8d7da; color: #721c24; }
                     .status-not-applicable { background: #e2e3e5; color: #383d41; }
                     .comment { margin-top: 10px; font-style: italic; }
                 </style>
@@ -567,12 +574,12 @@ class AssessmentManager {
                         <p>Reviewed</p>
                     </div>
                     <div class="stat-box">
-                        <h3>${stats.compliant}</h3>
-                        <p>Compliant</p>
+                        <h3>${stats.fulfilled}</h3>
+                        <p>Fulfilled</p>
                     </div>
                     <div class="stat-box">
-                        <h3>${stats.nonCompliant}</h3>
-                        <p>Non-Compliant</p>
+                        <h3>${stats.open}</h3>
+                        <p>Open</p>
                     </div>
                 </div>
                 

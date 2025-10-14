@@ -599,19 +599,24 @@ body {
     border-color: var(--primary-color);
 }
 
-.status-btn.compliant.active {
+.status-btn.fulfilled.active {
     background-color: var(--success-color);
     border-color: var(--success-color);
 }
 
-.status-btn.non-compliant.active {
+.status-btn.open.active {
     background-color: var(--danger-color);
     border-color: var(--danger-color);
 }
 
-.status-btn.not-applicable.active {
+.status-btn.not-required.active {
     background-color: var(--text-muted);
     border-color: var(--text-muted);
+}
+
+.status-btn.not-verified.active {
+    background-color: var(--secondary-color);
+    border-color: var(--secondary-color);
 }
 
 .comment-section {
@@ -1057,4 +1062,56 @@ input:focus {
         width: 100%;
         margin-bottom: var(--spacing-xs);
     }
+}
+
+/* Upload Loader Styles */
+.upload-loader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    backdrop-filter: blur(4px);
+}
+
+.upload-loader-content {
+    background: white;
+    padding: var(--spacing-xl);
+    border-radius: var(--border-radius-lg);
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    max-width: 400px;
+    width: 90%;
+}
+
+.upload-spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid var(--primary-color);
+    border-radius: 50%;
+    animation: upload-spin 1s linear infinite;
+    margin: 0 auto var(--spacing-md);
+}
+
+@keyframes upload-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.upload-loader-content p {
+    font-size: var(--font-size-lg);
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-xs);
+}
+
+.upload-loader-content small {
+    color: var(--text-muted);
+    font-size: var(--font-size-sm);
 }

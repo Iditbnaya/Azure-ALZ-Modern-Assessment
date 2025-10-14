@@ -170,7 +170,7 @@ class DashboardManager {
         const stats = this.dataLoader.getStatistics();
         
         const data = {
-            labels: ['Reviewed', 'Not Reviewed'],
+            labels: ['Reviewed', 'Not verified'],
             datasets: [{
                 data: [stats.reviewed, stats.notReviewed],
                 backgroundColor: [
@@ -202,14 +202,14 @@ class DashboardManager {
         const stats = this.dataLoader.getStatistics();
         
         const data = {
-            labels: ['Compliant', 'Non-Compliant', 'Not Applicable', 'Not Reviewed'],
+            labels: ['Fulfilled', 'Open', 'Not required', 'Not verified'],
             datasets: [{
-                data: [stats.compliant, stats.nonCompliant, stats.notApplicable, stats.notReviewed],
+                data: [stats.fulfilled, stats.open, stats.notRequired, stats.notVerified],
                 backgroundColor: [
-                    '#28a745', // Green for compliant
-                    '#dc3545', // Red for non-compliant
-                    '#6c757d', // Gray for not applicable
-                    '#e9ecef'  // Light gray for not reviewed
+                    '#28a745', // Green for fulfilled
+                    '#dc3545', // Red for open
+                    '#6c757d', // Gray for not required
+                    '#e9ecef'  // Light gray for not verified
                 ],
                 borderColor: [
                     '#20c997',
@@ -378,13 +378,13 @@ class DashboardManager {
         // Update stat cards
         const totalItems = document.getElementById('totalItems');
         const completedItems = document.getElementById('completedItems');
-        const compliantItems = document.getElementById('compliantItems');
-        const nonCompliantItems = document.getElementById('nonCompliantItems');
+        const fulfilledItems = document.getElementById('fulfilledItems');
+        const openItems = document.getElementById('openItems');
 
         if (totalItems) totalItems.textContent = stats.total;
         if (completedItems) completedItems.textContent = stats.reviewed;
-        if (compliantItems) compliantItems.textContent = stats.compliant;
-        if (nonCompliantItems) nonCompliantItems.textContent = stats.nonCompliant;
+        if (fulfilledItems) fulfilledItems.textContent = stats.fulfilled;
+        if (openItems) openItems.textContent = stats.open;
     }
 
     /**
@@ -413,9 +413,9 @@ class DashboardManager {
             };
         }
 
-        // Calculate compliance percentage (excluding Not Applicable items)
-        const applicableItems = stats.compliant + stats.nonCompliant;
-        const compliancePercentage = applicableItems > 0 ? (stats.compliant / applicableItems) * 100 : 0;
+        // Calculate compliance percentage (excluding Not Required items)
+        const applicableItems = stats.fulfilled + stats.open;
+        const compliancePercentage = applicableItems > 0 ? (stats.fulfilled / applicableItems) * 100 : 0;
 
         let grade, description;
         
@@ -439,8 +439,8 @@ class DashboardManager {
             description: description,
             details: {
                 totalReviewed: stats.reviewed,
-                totalCompliant: stats.compliant,
-                totalNonCompliant: stats.nonCompliant,
+                totalCompliant: stats.fulfilled,
+                totalNonCompliant: stats.open,
                 totalNotApplicable: stats.notApplicable
             }
         };
@@ -456,13 +456,13 @@ class DashboardManager {
         const complianceScore = this.calculateComplianceScore();
         const categoryBreakdown = this.getCategoryComplianceBreakdown();
         const severityBreakdown = this.getSeverityComplianceBreakdown();
-        const nonCompliantItems = this.getNonCompliantItems();
+        const openItems = this.getOpenItems().open || [];
 
         return {
             overview: complianceScore,
             categoryBreakdown: categoryBreakdown,
             severityBreakdown: severityBreakdown,
-            nonCompliantItems: nonCompliantItems,
+            openItems: openItems,
             recommendations: this.generateRecommendations(categoryBreakdown, severityBreakdown),
             generatedAt: new Date().toISOString()
         };
@@ -571,22 +571,63 @@ class DashboardManager {
     /**
      * Get all non-compliant items
      */
-    getNonCompliantItems() {
-        const checklist = this.dataLoader.getCurrentChecklist();
-        if (!checklist) return [];
 
-        return checklist.items
-            .filter(item => item.status === 'Non-Compliant')
+    /**
+     * Get all open items (Non-Compliant and Not Reviewed) organized by status
+     */
+    getOpenItems() {
+        const checklist = this.dataLoader.getCurrentChecklist();
+        if (!checklist) return { open: [], notVerified: [], totalOpen: 0 };
+
+        const open = checklist.items
+            .filter(item => item.status === 'Open')
             .map(item => ({
                 id: item.id,
                 category: item.category,
                 subcategory: item.subcategory,
                 text: item.text,
                 severity: item.severity,
-                comment: item.comment,
-                link: item.link,
-                training: item.training
+                status: item.status,
+                comment: item.comment || '',
+                link: item.link || '',
+                training: item.training || '',
+                waf: item.waf || '',
+                service: item.service || ''
             }));
+
+        const notVerified = checklist.items
+            .filter(item => item.status === 'Not verified')
+            .map(item => ({
+                id: item.id,
+                category: item.category,
+                subcategory: item.subcategory,
+                text: item.text,
+                severity: item.severity,
+                status: item.status,
+                comment: item.comment || '',
+                link: item.link || '',
+                training: item.training || '',
+                waf: item.waf || '',
+                service: item.service || ''
+            }));
+
+        return {
+            open: open.sort((a, b) => {
+                // Sort by severity (High > Medium > Low) then by ID
+                const severityOrder = { 'High': 3, 'Medium': 2, 'Low': 1 };
+                const severityDiff = (severityOrder[b.severity] || 0) - (severityOrder[a.severity] || 0);
+                if (severityDiff !== 0) return severityDiff;
+                return a.id.localeCompare(b.id);
+            }),
+            notVerified: notVerified.sort((a, b) => {
+                // Sort by severity (High > Medium > Low) then by ID
+                const severityOrder = { 'High': 3, 'Medium': 2, 'Low': 1 };
+                const severityDiff = (severityOrder[b.severity] || 0) - (severityOrder[a.severity] || 0);
+                if (severityDiff !== 0) return severityDiff;
+                return a.id.localeCompare(b.id);
+            }),
+            totalOpen: open.length + notVerified.length
+        };
     }
 
     /**

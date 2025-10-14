@@ -1,0 +1,82 @@
+name: Sync Fork with Upstream
+
+# This workflow syncs your forked review-checklists repository with the upstream Azure repository
+# Runs monthly on the 1st day of each month and can be triggered manually
+
+on:
+  # Schedule: Run on the 1st day of every month at 2 AM UTC
+  schedule:
+    - cron: '0 2 1 * *'
+  
+  # Allow manual trigger
+  workflow_dispatch:
+    inputs:
+      force_sync:
+        description: 'Force sync even if already up to date'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  sync-upstream:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout your fork
+        uses: actions/checkout@v4
+        with:
+          # Use PAT token for pushing changes back to your fork
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Add upstream repository
+        run: |
+          git remote add upstream https://github.com/Azure/review-checklists.git
+          git fetch upstream
+
+      - name: Check if sync is needed
+        id: check_sync
+        run: |
+          # Get the latest commit from upstream main
+          UPSTREAM_SHA=$(git rev-parse upstream/main)
+          FORK_SHA=$(git rev-parse origin/main)
+          
+          echo "Upstream SHA: $UPSTREAM_SHA"
+          echo "Fork SHA: $FORK_SHA"
+          
+          if [ "$UPSTREAM_SHA" = "$FORK_SHA" ] && [ "${{ inputs.force_sync }}" != "true" ]; then
+            echo "Fork is already up to date with upstream"
+            echo "sync_needed=false" >> $GITHUB_OUTPUT
+          else
+            echo "Sync needed or force sync requested"
+            echo "sync_needed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Sync fork with upstream
+        if: steps.check_sync.outputs.sync_needed == 'true'
+        run: |
+          # Configure git
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Checkout main branch
+          git checkout main
+          
+          # Merge upstream changes
+          git merge upstream/main --no-edit
+          
+          # Push changes to your fork
+          git push origin main
+
+      - name: Create sync summary
+        if: steps.check_sync.outputs.sync_needed == 'true'
+        run: |
+          echo "✅ Fork successfully synced with upstream Azure/review-checklists repository"
+          echo "📅 Sync completed at: $(date)"
+          echo "🔄 Latest changes from upstream have been merged into your fork"
+
+      - name: No sync needed
+        if: steps.check_sync.outputs.sync_needed == 'false'
+        run: |
+          echo "ℹ️ Fork is already up to date with upstream"
+          echo "📅 Checked at: $(date)"

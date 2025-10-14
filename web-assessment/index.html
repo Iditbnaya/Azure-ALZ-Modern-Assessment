@@ -27,14 +27,6 @@
                     <h1>Azure Landing Zone Assessment</h1>
                 </div>
                 <div class="header-controls">
-                    <select id="languageSelector" class="language-selector">
-                        <option value="en">English</option>
-                        <option value="es">Español</option>
-                        <option value="ja">日本語</option>
-                        <option value="ko">한국어</option>
-                        <option value="pt">Português</option>
-                        <option value="zh-Hant">繁體中文</option>
-                    </select>
                     <select id="checklistSelector" class="checklist-selector">
                         <option value="">Select Assessment Type</option>
                         <option value="alz">Azure Landing Zone</option>
@@ -43,7 +35,20 @@
                         <option value="appsvc">App Service</option>
                         <option value="avd">Azure Virtual Desktop</option>
                         <option value="apim">API Management</option>
-                        <!-- Add more as needed -->
+                        <option value="acr">Azure Container Registry</option>
+                        <option value="adf">Azure Data Factory</option>
+                        <option value="aro">Azure Red Hat OpenShift</option>
+                        <option value="azfun">Azure Functions</option>
+                        <option value="cosmosdb">Cosmos DB</option>
+                        <option value="databricks">Azure Databricks</option>
+                        <option value="eh">Event Hubs</option>
+                        <option value="keyvault">Key Vault</option>
+                        <option value="mysql">MySQL</option>
+                        <option value="postgreSQL">PostgreSQL</option>
+                        <option value="redis">Redis Cache</option>
+                        <option value="security">Security</option>
+                        <option value="sqldb">SQL Database</option>
+                        <option value="azure_storage">Azure Storage</option>
                     </select>
                     <button id="loadChecklist" class="btn btn-primary">
                         <i class="fas fa-download"></i> Load Assessment
@@ -52,6 +57,15 @@
                     <button id="uploadAssessmentBtn" class="btn btn-secondary">
                         <i class="fas fa-upload"></i> Upload Assessment
                     </button>
+                    
+                    <!-- Upload Loading Overlay -->
+                    <div id="uploadLoader" class="upload-loader" style="display: none;">
+                        <div class="upload-loader-content">
+                            <div class="upload-spinner"></div>
+                            <p>Processing file...</p>
+                            <small>Please wait while we process your assessment file.</small>
+                        </div>
+                    </div>
                 </div>
             </div>
         </header>
@@ -88,17 +102,11 @@
                             <h3>Export Results</h3>
                             <p>Export your assessment in multiple formats</p>
                         </div>
-                        <div class="feature-card">
-                            <i class="fas fa-globe"></i>
-                            <h3>Multi-language</h3>
-                            <p>Available in multiple languages</p>
-                        </div>
                     </div>
 
                     <div class="getting-started">
                         <h3>Getting Started</h3>
                         <ol>
-                            <li>Select your preferred language from the dropdown</li>
                             <li>Choose the assessment type (ALZ, AKS, etc.)</li>
                             <li>Click "Load Assessment" to begin</li>
                             <li>Work through the recommendations and track your progress</li>
@@ -144,6 +152,17 @@
                             </select>
                         </div>
                         <div class="filter-group">
+                            <label for="wafFilter">WAF Pillar:</label>
+                            <select id="wafFilter">
+                                <option value="">All Pillars</option>
+                                <option value="Operations">Operations</option>
+                                <option value="Security">Security</option>
+                                <option value="Reliability">Reliability</option>
+                                <option value="Performance">Performance</option>
+                                <option value="Cost">Cost</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
                             <label for="severityFilter">Severity:</label>
                             <select id="severityFilter">
                                 <option value="">All Severities</option>
@@ -156,10 +175,11 @@
                             <label for="statusFilter">Status:</label>
                             <select id="statusFilter">
                                 <option value="">All Statuses</option>
-                                <option value="Not Reviewed">Not Reviewed</option>
-                                <option value="Compliant">Compliant</option>
-                                <option value="Non-Compliant">Non-Compliant</option>
-                                <option value="Not Applicable">Not Applicable</option>
+                                <option value="Not verified">Not verified</option>
+                                <option value="Open">Open</option>
+                                <option value="Fulfilled">Fulfilled</option>
+                                <option value="Not required">Not required</option>
+                                <option value="N/A">N/A</option>
                             </select>
                         </div>
                         <button id="clearFilters" class="btn btn-secondary">Clear Filters</button>
@@ -205,12 +225,12 @@
                             <div class="stat-label">Completed</div>
                         </div>
                         <div class="stat-card">
-                            <div class="stat-number" id="compliantItems">0</div>
-                            <div class="stat-label">Compliant</div>
+                            <div class="stat-number" id="fulfilledItems">0</div>
+                            <div class="stat-label">Fulfilled</div>
                         </div>
                         <div class="stat-card">
-                            <div class="stat-number" id="nonCompliantItems">0</div>
-                            <div class="stat-label">Non-Compliant</div>
+                            <div class="stat-number" id="openItems">0</div>
+                            <div class="stat-label">Open</div>
                         </div>
                     </div>
                 </div>
@@ -232,6 +252,10 @@
                                     <span>CSV</span>
                                 </label>
                                 <label class="format-option">
+                                    <input type="radio" name="exportFormat" value="excel">
+                                    <span>Excel</span>
+                                </label>
+                                <label class="format-option">
                                     <input type="radio" name="exportFormat" value="html">
                                     <span>HTML Report</span>
                                 </label>
@@ -251,6 +275,13 @@
                             <label class="checkbox-option">
                                 <input type="checkbox" id="includeOnlyReviewed">
                                 <span>Only Reviewed Items</span>
+                            </label>
+                            <label class="checkbox-option">
+                                <input type="checkbox" id="templateFormat">
+                                <span>Template Format (checklist.json structure)</span>
+                                <small style="display: block; color: #666; margin-top: 4px;">
+                                    Export in exact same format as checklist.json template (excludes assessment data like comments, status, review info)
+                                </small>
                             </label>
                         </div>
 

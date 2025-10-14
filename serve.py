@@ -32,7 +32,7 @@ class CORSHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
 
 def main():
     """Start the development server."""
-    # Change to the web-assessment directory
+    # Serve from the web-assessment directory
     script_dir = Path(__file__).parent
     web_dir = script_dir / 'web-assessment'
     
@@ -41,7 +41,7 @@ def main():
         print(f"📁 Serving from: {web_dir}")
     else:
         print(f"❌ Web directory not found: {web_dir}")
-        print("Please run this script from the ALZ Assessment root directory.")
+        print("Please run this script from the project root directory.")
         sys.exit(1)
     
     # Configuration

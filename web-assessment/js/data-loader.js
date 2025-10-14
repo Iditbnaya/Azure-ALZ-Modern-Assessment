@@ -16,21 +16,27 @@ class DataLoader {
             'apim': 'API Management',
             'acr': 'Azure Container Registry',
             'adf': 'Azure Data Factory',
-            'ado': 'Azure DevOps',
-            'afd': 'Azure Front Door',
             'aro': 'Azure Red Hat OpenShift',
-            'avs': 'Azure VMware Solution'
+            'azfun': 'Azure Functions',
+            'cosmosdb': 'Cosmos DB',
+            'databricks': 'Azure Databricks',
+            'eh': 'Event Hubs',
+            'keyvault': 'Key Vault',
+            'mysql': 'MySQL',
+            'postgreSQL': 'PostgreSQL',
+            'redis': 'Redis Cache',
+            'security': 'Security',
+            'sqldb': 'SQL Database',
+            'azure_storage': 'Azure Storage'
         };
-        this.supportedLanguages = ['en', 'es', 'ja', 'ko', 'pt', 'zh-Hant'];
     }
 
     /**
-     * Load checklist data based on type and language
+     * Load checklist data based on type
      * @param {string} checklistType - Type of checklist (alz, aks, etc.)
-     * @param {string} language - Language code (en, es, etc.)
      * @returns {Promise<Object>} Parsed checklist data
      */
-    async loadChecklist(checklistType, language = 'en') {
+    async loadChecklist(checklistType) {
         try {
             // If requesting 'main' or if no specific type, load the main checklist.json file
             if (checklistType === 'main' || !checklistType) {
@@ -42,26 +48,18 @@ class DataLoader {
                     this.currentChecklist = this.processChecklistData(checklistData);
                     return this.currentChecklist;
                 }
+                
+                throw new Error('Main checklist.json not found or invalid');
             }
 
-            // Try to load from the main checklist.json file as fallback
-            const mainChecklistPath = 'checklist.json';
-            let checklistData = await this.fetchJSON(mainChecklistPath);
-
-            if (checklistData && checklistData.items) {
-                console.log('Loaded from main checklist.json');
-                this.currentChecklist = this.processChecklistData(checklistData);
-                return this.currentChecklist;
-            }
-
-            // Fallback to specific checklist files (now in subdirectory)
-            const filename = `${checklistType}_checklist.${language}.json`;
+            // For specific checklist types, load from the specific checklist files
+            const filename = `${checklistType}_checklist.en.json`;
             const checklistPath = `review-checklists/checklists/${filename}`;
             
-            checklistData = await this.fetchJSON(checklistPath);
+            let checklistData = await this.fetchJSON(checklistPath);
             
             if (!checklistData || !checklistData.items) {
-                throw new Error('Invalid checklist format');
+                throw new Error(`Invalid checklist format for ${filename}`);
             }
 
             this.currentChecklist = this.processChecklistData(checklistData);
@@ -108,7 +106,7 @@ class DataLoader {
     processChecklistData(rawData) {
         const processedItems = rawData.items.map(item => ({
             ...item,
-            status: 'Not Reviewed',
+            status: 'Not verified',
             comment: '',
             reviewedAt: null,
             reviewedBy: null
@@ -151,7 +149,7 @@ class DataLoader {
                 link: 'https://learn.microsoft.com/azure/cloud-adoption-framework/ready/landing-zone/design-area/multi-tenant/considerations-recommendations',
                 training: 'https://learn.microsoft.com/training/modules/deploy-resources-scopes-bicep/2-understand-deployment-scopes',
                 guid: '70c15989-c726-42c7-b0d3-24b7375b9201',
-                status: 'Not Reviewed',
+                status: 'Not verified',
                 comment: '',
                 reviewedAt: null,
                 reviewedBy: null
@@ -167,7 +165,7 @@ class DataLoader {
                 link: 'https://learn.microsoft.com/azure/cloud-adoption-framework/ready/landing-zone/design-area/multi-tenant/automation',
                 training: 'https://learn.microsoft.com/entra/architecture/multi-tenant-user-management-introduction/',
                 guid: '6309957b-821a-43d1-b9d9-7fcf1802b747',
-                status: 'Not Reviewed',
+                status: 'Not verified',
                 comment: '',
                 reviewedAt: null,
                 reviewedBy: null
@@ -183,7 +181,7 @@ class DataLoader {
                 link: 'https://learn.microsoft.com/security/zero-trust/',
                 training: 'https://learn.microsoft.com/training/modules/zero-trust-introduction/',
                 guid: 'security-001',
-                status: 'Not Reviewed',
+                status: 'Not verified',
                 comment: '',
                 reviewedAt: null,
                 reviewedBy: null
@@ -219,14 +217,6 @@ class DataLoader {
     }
 
     /**
-     * Get supported languages
-     * @returns {Array<string>} Supported language codes
-     */
-    getSupportedLanguages() {
-        return this.supportedLanguages;
-    }
-
-    /**
      * Get current checklist data
      * @returns {Object} Current checklist data
      */
@@ -256,6 +246,10 @@ class DataLoader {
 
         if (filters.severity && filters.severity !== '') {
             filteredItems = filteredItems.filter(item => item.severity === filters.severity);
+        }
+
+        if (filters.waf && filters.waf !== '') {
+            filteredItems = filteredItems.filter(item => item.waf === filters.waf);
         }
 
         if (filters.status && filters.status !== '') {
@@ -311,8 +305,8 @@ class DataLoader {
             return {
                 total: 0,
                 reviewed: 0,
-                compliant: 0,
-                nonCompliant: 0,
+                fulfilled: 0,
+                open: 0,
                 notApplicable: 0,
                 notReviewed: 0,
                 completionPercentage: 0
@@ -321,17 +315,17 @@ class DataLoader {
 
         const items = this.currentChecklist.items;
         const total = items.length;
-        const reviewed = items.filter(item => item.status !== 'Not Reviewed').length;
-        const compliant = items.filter(item => item.status === 'Compliant').length;
-        const nonCompliant = items.filter(item => item.status === 'Non-Compliant').length;
-        const notApplicable = items.filter(item => item.status === 'Not Applicable').length;
-        const notReviewed = items.filter(item => item.status === 'Not Reviewed').length;
+        const reviewed = items.filter(item => item.status !== 'Not verified').length;
+        const fulfilled = items.filter(item => item.status === 'Fulfilled').length;
+        const open = items.filter(item => item.status === 'Open').length;
+        const notApplicable = items.filter(item => item.status === 'Not required').length;
+        const notReviewed = items.filter(item => item.status === 'Not verified').length;
 
         return {
             total,
             reviewed,
-            compliant,
-            nonCompliant,
+            fulfilled,
+            open,
             notApplicable,
             notReviewed,
             completionPercentage: total > 0 ? Math.round((reviewed / total) * 100) : 0
@@ -355,7 +349,7 @@ class DataLoader {
         let items = [...this.currentChecklist.items];
 
         if (onlyReviewed) {
-            items = items.filter(item => item.status !== 'Not Reviewed');
+            items = items.filter(item => item.status !== 'Not verified');
         }
 
         const exportData = {
@@ -409,7 +403,7 @@ class DataLoader {
             importData.items.forEach(importItem => {
                 const currentItem = this.currentChecklist.items.find(item => item.id === importItem.id);
                 if (currentItem) {
-                    currentItem.status = importItem.status || 'Not Reviewed';
+                    currentItem.status = importItem.status || 'Not verified';
                     currentItem.comment = importItem.comment || '';
                     currentItem.reviewedAt = importItem.reviewedAt || null;
                     currentItem.reviewedBy = importItem.reviewedBy || null;

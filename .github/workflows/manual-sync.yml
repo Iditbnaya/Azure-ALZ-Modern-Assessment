@@ -1,0 +1,79 @@
+name: Manual Checklist Sync
+
+# Quick manual trigger for immediate checklist updates
+# Use this when you need to sync checklists outside the monthly schedule
+
+on:
+  workflow_dispatch:
+    inputs:
+      sync_fork_first:
+        description: 'Sync fork with upstream first'
+        required: false
+        default: true
+        type: boolean
+      preserve_custom_ai:
+        description: 'Preserve custom AI Landing Zone checklist'
+        required: false
+        default: true
+        type: boolean
+      create_backup:
+        description: 'Create backup of existing checklists'
+        required: false
+        default: true
+        type: boolean
+
+jobs:
+  manual-sync:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Trigger fork sync
+        if: inputs.sync_fork_first == 'true' || inputs.sync_fork_first == ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Trigger the upstream sync workflow first
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'sync-upstream.yml',
+              ref: 'main',
+              inputs: {
+                force_sync: 'true'
+              }
+            });
+            console.log('✅ Triggered upstream sync workflow');
+
+      - name: Wait for upstream sync
+        if: inputs.sync_fork_first == 'true' || inputs.sync_fork_first == ''
+        run: |
+          echo "⏳ Waiting 30 seconds for upstream sync to complete..."
+          sleep 30
+
+      - name: Trigger checklist update
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Trigger the checklist update workflow
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'update-checklists.yml',
+              ref: 'main',
+              inputs: {
+                preserve_custom_ai: '${{ inputs.preserve_custom_ai }}'
+              }
+            });
+            console.log('✅ Triggered checklist update workflow');
+
+      - name: Manual sync summary
+        run: |
+          echo "🚀 Manual checklist sync initiated!"
+          echo "📅 Triggered at: $(date)"
+          echo ""
+          echo "Options selected:"
+          echo "- Sync fork first: ${{ inputs.sync_fork_first }}"
+          echo "- Preserve custom AI: ${{ inputs.preserve_custom_ai }}"
+          echo "- Create backup: ${{ inputs.create_backup }}"
+          echo ""
+          echo "Check the Actions tab for progress updates."

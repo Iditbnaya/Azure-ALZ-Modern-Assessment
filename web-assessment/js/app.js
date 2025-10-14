@@ -75,16 +75,6 @@ class ALZAssessmentApp {
             resetButton.addEventListener('click', () => this.resetAssessment());
         }
 
-        // Language selector
-        const languageSelector = document.getElementById('languageSelector');
-        if (languageSelector) {
-            languageSelector.addEventListener('change', () => {
-                if (this.dataLoader.getCurrentChecklist()) {
-                    this.reloadCurrentChecklist();
-                }
-            });
-        }
-
         // Handle browser navigation
         window.addEventListener('popstate', (event) => {
             if (event.state && event.state.view) {
@@ -112,11 +102,10 @@ class ALZAssessmentApp {
     }
 
     /**
-     * Load checklist based on selected type and language
+     * Load checklist based on selected type
      */
     async loadChecklist() {
         const checklistType = document.getElementById('checklistSelector')?.value;
-        const language = document.getElementById('languageSelector')?.value || 'en';
 
         if (!checklistType) {
             this.showNotification('Please select an assessment type', 'warning');
@@ -133,10 +122,10 @@ class ALZAssessmentApp {
         try {
             this.setLoadingState(true);
             
-            console.log(`Loading checklist: ${checklistType} (${language})`);
+            console.log(`Loading checklist: ${checklistType}`);
             
             // Load the checklist data
-            await this.dataLoader.loadChecklist(checklistType, language);
+            await this.dataLoader.loadChecklist(checklistType);
             
             // Initialize all managers
             this.initializeManagers();
@@ -158,7 +147,7 @@ class ALZAssessmentApp {
     }
 
     /**
-     * Reload current checklist with different language
+     * Reload current checklist
      */
     async reloadCurrentChecklist() {
         const checklistType = document.getElementById('checklistSelector')?.value;
@@ -352,7 +341,6 @@ class ALZAssessmentApp {
             const progressData = {
                 timestamp: new Date().toISOString(),
                 checklistType: document.getElementById('checklistSelector')?.value,
-                language: document.getElementById('languageSelector')?.value,
                 data: this.dataLoader.exportData({ includeComments: true })
             };
 
@@ -375,11 +363,9 @@ class ALZAssessmentApp {
 
             const progressData = JSON.parse(savedProgress);
             const currentChecklistType = document.getElementById('checklistSelector')?.value;
-            const currentLanguage = document.getElementById('languageSelector')?.value;
 
             // Only restore if it matches current selection
-            if (progressData.checklistType === currentChecklistType && 
-                progressData.language === currentLanguage) {
+            if (progressData.checklistType === currentChecklistType) {
                 
                 const success = this.dataLoader.importProgress(progressData.data);
                 if (success) {
@@ -418,9 +404,9 @@ class ALZAssessmentApp {
             return false;
         }
 
-        // Check if there are any items with status other than 'Not Reviewed'
+        // Check if there are any items with status other than 'Not verified'
         const items = this.dataLoader.filterItems();
-        return items.some(item => item.status && item.status !== 'Not Reviewed');
+        return items.some(item => item.status && item.status !== 'Not verified');
     }
 
     /**
@@ -599,51 +585,169 @@ class ALZAssessmentApp {
         const file = event.target.files[0];
         if (!file) return;
 
+        // Show loader immediately
+        this.showUploadLoader(true);
+
         try {
             // Check if we should prompt to save current assessment
             const shouldProceed = await this.promptSaveBeforeSwitch();
             if (!shouldProceed) {
                 // User cancelled, reset file input
                 event.target.value = '';
+                this.showUploadLoader(false);
                 return;
             }
 
-            let data;
-            const fileName = file.name.toLowerCase();
-
-            if (fileName.endsWith('.json')) {
-                // Handle JSON file
-                const text = await file.text();
-                data = JSON.parse(text);
-            } else if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
-                // Handle Excel file
-                data = await this.parseExcelFile(file);
-            } else if (fileName.endsWith('.csv')) {
-                // Handle CSV file
-                data = await this.parseCSVFile(file);
-            } else {
-                this.showNotification('Unsupported file format. Please upload a JSON, Excel (.xlsx), or CSV file.', 'error');
-                event.target.value = '';
-                return;
-            }
-
-            // Validate the uploaded data structure
-            if (!this.validateUploadedData(data)) {
-                this.showNotification('Invalid assessment file format', 'error');
-                event.target.value = '';
-                return;
-            }
-
-            // Load the assessment data
-            await this.loadUploadedAssessment(data);
+            // Process file asynchronously to prevent UI freezing
+            await this.processFileAsync(file, event);
             
-            this.showNotification('Assessment uploaded and loaded successfully!', 'success');
-            event.target.value = ''; // Reset file input
-
         } catch (error) {
             console.error('Failed to upload assessment:', error);
             this.showNotification(`Failed to upload assessment: ${error.message}`, 'error');
             event.target.value = '';
+        } finally {
+            // Always hide loader
+            this.showUploadLoader(false);
+        }
+    }
+
+    /**
+     * Process file asynchronously to prevent UI blocking
+     */
+    async processFileAsync(file, event) {
+        return new Promise(async (resolve, reject) => {
+            try {
+                // Use setTimeout to allow UI to update
+                setTimeout(async () => {
+                    try {
+                        let data;
+                        const fileName = file.name.toLowerCase();
+
+                        if (fileName.endsWith('.json')) {
+                            // Handle JSON file
+                            const text = await file.text();
+                            data = JSON.parse(text);
+                        } else if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+                            // Handle Excel file
+                            data = await this.parseExcelFile(file);
+                        } else if (fileName.endsWith('.csv')) {
+                            // Handle CSV file
+                            data = await this.parseCSVFile(file);
+                        } else {
+                            this.showNotification('Unsupported file format. Please upload a JSON, Excel (.xlsx), or CSV file.', 'error');
+                            event.target.value = '';
+                            reject(new Error('Unsupported file format'));
+                            return;
+                        }
+
+                        // Validate the uploaded data structure
+                        if (!this.validateUploadedData(data)) {
+                            this.showNotification('Invalid assessment file format', 'error');
+                            event.target.value = '';
+                            reject(new Error('Invalid file format'));
+                            return;
+                        }
+
+                        // Load the assessment data
+                        await this.loadUploadedAssessment(data);
+                        
+                        // Auto-refresh the UI
+                        await this.refreshUIAfterUpload();
+                        
+                        this.showNotification('Assessment uploaded and loaded successfully!', 'success');
+                        event.target.value = ''; // Reset file input
+                        
+                        resolve();
+                    } catch (error) {
+                        reject(error);
+                    }
+                }, 100); // Small delay to allow loader to show
+            } catch (error) {
+                reject(error);
+            }
+        });
+    }
+
+    /**
+     * Show or hide upload loader
+     */
+    showUploadLoader(show) {
+        const loader = document.getElementById('uploadLoader');
+        if (loader) {
+            loader.style.display = show ? 'flex' : 'none';
+            
+            // Disable/enable upload button to prevent multiple uploads
+            const uploadBtn = document.getElementById('uploadAssessmentBtn');
+            if (uploadBtn) {
+                uploadBtn.disabled = show;
+                if (show) {
+                    uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+                } else {
+                    uploadBtn.innerHTML = '<i class="fas fa-upload"></i> Upload Assessment';
+                }
+            }
+        }
+    }
+
+    /**
+     * Refresh UI components after successful upload
+     */
+    async refreshUIAfterUpload() {
+        try {
+            // Refresh dashboard if visible
+            if (this.dashboardManager && document.getElementById('dashboardPanel').style.display !== 'none') {
+                await this.dashboardManager.renderDashboard();
+            }
+            
+            // Refresh assessment view if visible
+            if (this.assessmentManager && document.getElementById('assessmentPanel').style.display !== 'none') {
+                await this.assessmentManager.renderAssessmentItems();
+            }
+            
+            // Update navigation to show current assessment
+            this.updateNavigationState();
+            
+            // Update header with current checklist name
+            this.updateHeaderTitle();
+            
+        } catch (error) {
+            console.error('Error refreshing UI after upload:', error);
+            // Don't throw error as upload was successful
+        }
+    }
+
+    /**
+     * Update header title with current checklist name
+     */
+    updateHeaderTitle() {
+        const checklist = this.dataLoader.getCurrentChecklist();
+        if (checklist && checklist.metadata) {
+            const titleElement = document.querySelector('.app-title');
+            if (titleElement) {
+                titleElement.textContent = `Azure Landing Zone Assessment - ${checklist.metadata.name || 'Custom Assessment'}`;
+            }
+        }
+    }
+
+    /**
+     * Update navigation state after loading new assessment
+     */
+    updateNavigationState() {
+        const checklist = this.dataLoader.getCurrentChecklist();
+        const hasData = checklist && checklist.items && checklist.items.length > 0;
+        
+        // Enable/disable navigation buttons based on data availability
+        const dashboardBtn = document.querySelector('[data-panel="dashboardPanel"]');
+        const assessmentBtn = document.querySelector('[data-panel="assessmentPanel"]');
+        const exportBtn = document.querySelector('[data-panel="exportPanel"]');
+        
+        if (dashboardBtn) dashboardBtn.disabled = !hasData;
+        if (assessmentBtn) assessmentBtn.disabled = !hasData;
+        if (exportBtn) exportBtn.disabled = !hasData;
+        
+        // If we have data and currently showing welcome screen, switch to dashboard
+        if (hasData && document.getElementById('welcomeScreen').style.display !== 'none') {
+            this.showPanel('dashboardPanel');
         }
     }
 
@@ -747,15 +851,28 @@ class ALZAssessmentApp {
         // Map column names to expected fields
         const columnMap = this.createColumnMap(headers);
         
-        // Process data rows
+        // Process data rows in batches to avoid UI blocking
         const items = [];
-        for (let i = headerRowIndex + 1; i < data.length; i++) {
-            const row = data[i];
-            if (!row || !Array.isArray(row) || row.length === 0) continue;
+        const batchSize = 100; // Process 100 rows at a time
+        const totalRows = data.length - headerRowIndex - 1;
+        
+        for (let batchStart = headerRowIndex + 1; batchStart < data.length; batchStart += batchSize) {
+            const batchEnd = Math.min(batchStart + batchSize, data.length);
             
-            const item = this.processExcelRow(row, columnMap, headers, i);
-            if (item && (item.id || item.recommendation)) {
-                items.push(item);
+            // Process batch
+            for (let i = batchStart; i < batchEnd; i++) {
+                const row = data[i];
+                if (!row || !Array.isArray(row) || row.length === 0) continue;
+                
+                const item = this.processExcelRow(row, columnMap, headers, i);
+                if (item && (item.id || item.recommendation)) {
+                    items.push(item);
+                }
+            }
+            
+            // Allow UI to update between batches
+            if (batchEnd < data.length) {
+                await new Promise(resolve => setTimeout(resolve, 10));
             }
         }
         
@@ -780,9 +897,10 @@ class ALZAssessmentApp {
         }
 
         // Try to determine assessment type from the data
-        const assessmentType = this.detectAssessmentType(items);        return {
+        const assessmentType = this.detectAssessmentType(items);
+        
+        return {
             assessmentType: assessmentType,
-            language: 'en', // Default to English
             items: items,
             uploadedAt: new Date().toISOString()
         };
@@ -874,7 +992,7 @@ class ALZAssessmentApp {
                 if (row[i] && typeof row[i] === 'string' && row[i].length > longestText.length) {
                     // Skip if it looks like a status or short identifier
                     const text = row[i].toLowerCase();
-                    if (!text.match(/^(compliant|non-compliant|not applicable|not reviewed|yes|no|n\/a)$/i) && 
+                    if (!text.match(/^(fulfilled|open|not required|not verified|yes|no|n\/a)$/i) && 
                         !text.match(/^[A-Z]\d+\.\d+$/) && 
                         row[i].length > 20) {
                         longestText = row[i];
@@ -894,6 +1012,7 @@ class ALZAssessmentApp {
      */
     normalizeStatus(status) {
         switch (status) {
+            case 'fulfilled':
             case 'compliant':
             case 'yes':
             case 'passed':
@@ -902,8 +1021,9 @@ class ALZAssessmentApp {
             case 'done':
             case 'green':
             case '✓':
-                return 'Compliant';
+                return 'Fulfilled';
                 
+            case 'open':
             case 'non-compliant':
             case 'non compliant':
             case 'not compliant':
@@ -912,8 +1032,9 @@ class ALZAssessmentApp {
             case 'fail':
             case 'red':
             case '✗':
-                return 'Non-Compliant';
+                return 'Open';
                 
+            case 'not required':
             case 'not applicable':
             case 'n/a':
             case 'na':
@@ -921,8 +1042,9 @@ class ALZAssessmentApp {
             case 'skipped':
             case 'grey':
             case 'gray':
-                return 'Not Applicable';
+                return 'Not required';
                 
+            case 'not verified':
             case 'not reviewed':
             case 'pending':
             case 'todo':
@@ -931,7 +1053,7 @@ class ALZAssessmentApp {
             case null:
             case undefined:
             default:
-                return 'Not Reviewed';
+                return 'Not verified';
         }
     }
 
@@ -1055,7 +1177,7 @@ class ALZAssessmentApp {
         }
 
         // Check for expected properties
-        if (data.assessmentType && data.language && data.items && Array.isArray(data.items)) {
+        if (data.assessmentType && data.items && Array.isArray(data.items)) {
             return true;
         }
 
@@ -1073,20 +1195,16 @@ class ALZAssessmentApp {
     async loadUploadedAssessment(data) {
         try {
             // If it's a full assessment file with metadata
-            if (data.assessmentType && data.language && data.items) {
-                // Set the assessment type and language
+            if (data.assessmentType && data.items) {
+                // Set the assessment type
                 const checklistSelector = document.getElementById('checklistSelector');
-                const languageSelector = document.getElementById('languageSelector');
                 
                 if (checklistSelector) {
                     checklistSelector.value = data.assessmentType;
                 }
-                if (languageSelector) {
-                    languageSelector.value = data.language;
-                }
 
                 // Load the checklist first
-                await this.dataLoader.loadChecklist(data.assessmentType, data.language);
+                await this.dataLoader.loadChecklist(data.assessmentType);
                 
                 // Initialize managers
                 this.initializeManagers();

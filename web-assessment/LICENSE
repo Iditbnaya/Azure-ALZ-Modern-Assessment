@@ -1,0 +1,74 @@
+MIT License
+
+Copyright (c) Microsoft Corporation.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE
+
+---
+
+## License Guide & Usage Instructions
+
+### What You Can Do
+✅ **Commercial Use**: Use this software for commercial purposes
+✅ **Distribution**: Distribute copies of the software
+✅ **Modification**: Modify the software to fit your needs
+✅ **Private Use**: Use the software for private/internal purposes
+✅ **Patent Use**: This license provides an express grant of patent rights from contributors
+
+### What You Must Do
+📋 **Include Copyright**: Include the original copyright notice in all copies
+📋 **Include License**: Include this license text in all copies or substantial portions
+📋 **State Changes**: Document any significant changes you make to the software
+
+### What You Cannot Do
+❌ **Liability**: Hold the authors liable for damages
+❌ **Warranty**: Expect any warranty or guarantee of functionality
+❌ **Trademark**: Use Microsoft trademarks without proper authorization
+
+### Attribution Requirements
+When redistributing or modifying this software, you must:
+1. Retain the copyright notice above
+2. Retain this license text
+3. Clearly indicate any modifications made
+4. Include attribution to the original Azure Review Checklists project
+
+### Additional Disclaimers
+
+**Not Official Microsoft Software**: This tool is community-developed and is not 
+official Microsoft software or documentation. It is not endorsed by Microsoft.
+
+**No Certification**: This tool does not provide official Azure certification or 
+compliance validation. Always verify recommendations against current Azure 
+documentation and best practices.
+
+**Security Notice**: This application processes data client-side only. No data 
+is transmitted to external servers. However, users should review the code before 
+using with sensitive information.
+
+**Support**: This software is provided as-is with no official support. Community 
+support may be available through GitHub issues.
+
+### Third-Party Dependencies
+This software may include third-party libraries with their own licenses:
+- Chart.js (MIT License)
+- Font Awesome (Font Awesome License)
+- Other web dependencies as listed in the code
+
+For questions about licensing, please refer to the original Azure Review Checklists 
+repository or consult with legal counsel for specific use cases.

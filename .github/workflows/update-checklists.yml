@@ -1,0 +1,262 @@
+name: Update Assessment Tool Checklists
+
+# This workflow updates your ALZ Assessment Tool with the latest checklists
+# from your synced fork of the review-checklists repository
+
+on:
+  # Run after the upstream sync completes
+  workflow_run:
+    workflows: ["Sync Fork with Upstream"]
+    types:
+      - completed
+  
+  # Schedule: Run monthly after upstream sync (1st day at 3 AM UTC)
+  schedule:
+    - cron: '0 3 1 * *'
+  
+  # Allow manual trigger
+  workflow_dispatch:
+    inputs:
+      preserve_custom_ai:
+        description: 'Preserve custom AI Landing Zone checklist'
+        required: false
+        default: true
+        type: boolean
+
+jobs:
+  update-checklists:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout assessment tool repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js (for JSON processing)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Backup existing checklists
+        run: |
+          # Create backup directory with timestamp
+          BACKUP_DIR="backups/checklists-$(date +%Y-%m-%d-%H%M)"
+          mkdir -p "$BACKUP_DIR"
+          
+          if [ -d "review-checklists/checklists" ]; then
+            cp -r review-checklists/checklists/* "$BACKUP_DIR/" 2>/dev/null || true
+            echo "✅ Backup created at: $BACKUP_DIR"
+            echo "BACKUP_DIR=$BACKUP_DIR" >> $GITHUB_ENV
+          else
+            echo "ℹ️ No existing checklists to backup"
+          fi
+
+      - name: Download latest checklists from your fork
+        run: |
+          # Get your GitHub username from the repository
+          GITHUB_USERNAME="${{ github.repository_owner }}"
+          
+          echo "📥 Downloading checklists from: $GITHUB_USERNAME/review-checklists"
+          
+          # Create checklists directory
+          mkdir -p review-checklists/checklists
+          
+          # Use GitHub API to get all checklist files
+          API_URL="https://api.github.com/repos/$GITHUB_USERNAME/review-checklists/contents/checklists"
+          
+          # Download the file list
+          curl -s "$API_URL" | jq -r '.[] | select(.name | endswith(".json")) | .download_url' > checklist_urls.txt
+          
+          # Download each file
+          while IFS= read -r url; do
+            filename=$(basename "$url")
+            echo "⬇️ Downloading: $filename"
+            curl -s "$url" -o "review-checklists/checklists/$filename"
+          done < checklist_urls.txt
+          
+          # Count downloaded files
+          file_count=$(ls review-checklists/checklists/*.json 2>/dev/null | wc -l)
+          echo "✅ Downloaded $file_count checklist files"
+
+      - name: Preserve custom AI Landing Zone checklist
+        if: inputs.preserve_custom_ai == 'true' || inputs.preserve_custom_ai == ''
+        run: |
+          CUSTOM_AI_FILE="review-checklists/checklists/ai_lz_checklist.en.json"
+          BACKUP_AI_FILE="$BACKUP_DIR/ai_lz_checklist.en.json"
+          
+          if [ -f "$BACKUP_AI_FILE" ] && [ -f "$CUSTOM_AI_FILE" ]; then
+            # Check if the files are different (custom version exists)
+            if ! cmp -s "$BACKUP_AI_FILE" "$CUSTOM_AI_FILE"; then
+              echo "🔒 Preserving custom AI Landing Zone checklist"
+              cp "$BACKUP_AI_FILE" "$CUSTOM_AI_FILE"
+              echo "✅ Custom AI checklist preserved"
+            else
+              echo "ℹ️ AI checklist is standard, using updated version"
+            fi
+          else
+            echo "ℹ️ No custom AI checklist to preserve"
+          fi
+
+      - name: Validate downloaded checklists
+        run: |
+          echo "🔍 Validating downloaded checklists..."
+          
+          # Check if files are valid JSON
+          invalid_files=0
+          for file in review-checklists/checklists/*.json; do
+            if [ -f "$file" ]; then
+              if ! jq . "$file" > /dev/null 2>&1; then
+                echo "❌ Invalid JSON: $(basename "$file")"
+                ((invalid_files++))
+              else
+                echo "✅ Valid: $(basename "$file")"
+              fi
+            fi
+          done
+          
+          if [ $invalid_files -gt 0 ]; then
+            echo "❌ Found $invalid_files invalid JSON files"
+            exit 1
+          else
+            echo "✅ All checklist files are valid JSON"
+          fi
+
+      - name: Update checklist mapping in data-loader.js
+        run: |
+          echo "🔧 Updating data-loader.js with available checklists..."
+          
+          # Generate the checklist mapping from available files
+          cat > update_mapping.js << 'EOF'
+          const fs = require('fs');
+          const path = require('path');
+          
+          // Read the current data-loader.js
+          const dataLoaderPath = 'web-assessment/js/data-loader.js';
+          let content = fs.readFileSync(dataLoaderPath, 'utf8');
+          
+          // Get list of available checklist files
+          const checklistDir = 'review-checklists/checklists';
+          const files = fs.readdirSync(checklistDir)
+            .filter(file => file.endsWith('_checklist.en.json'))
+            .map(file => file.replace('_checklist.en.json', ''));
+          
+          // Create mapping object
+          const mapping = {
+            'main': 'Complete ALZ Assessment (Main Checklist)'
+          };
+          
+          // Add mappings for each checklist type
+          files.forEach(type => {
+            const displayName = type.split('_')
+              .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+              .join(' ')
+              .replace(/([A-Z])/g, ' $1')
+              .trim()
+              .replace(/\s+/g, ' ');
+            
+            mapping[type] = displayName;
+          });
+          
+          // Create the new mapping string
+          const mappingString = JSON.stringify(mapping, null, 12)
+            .replace(/"/g, "'")
+            .replace(/\n/g, '\n        ');
+          
+          // Replace the availableChecklists object
+          const regex = /this\.availableChecklists\s*=\s*\{[^}]*\}/s;
+          const replacement = `this.availableChecklists = ${mappingString}`;
+          
+          content = content.replace(regex, replacement);
+          
+          // Write back to file
+          fs.writeFileSync(dataLoaderPath, content);
+          console.log('✅ Updated data-loader.js with available checklists');
+          EOF
+          
+          node update_mapping.js
+
+      - name: Create update summary
+        run: |
+          echo "📊 Checklist Update Summary" > update_summary.md
+          echo "=========================" >> update_summary.md
+          echo "" >> update_summary.md
+          echo "**Update Date:** $(date)" >> update_summary.md
+          echo "**Repository:** ${{ github.repository_owner }}/review-checklists" >> update_summary.md
+          echo "" >> update_summary.md
+          echo "**Files Updated:**" >> update_summary.md
+          
+          file_count=$(ls review-checklists/checklists/*.json 2>/dev/null | wc -l)
+          echo "- Total checklist files: $file_count" >> update_summary.md
+          
+          if [ -n "$BACKUP_DIR" ]; then
+            echo "- Backup location: $BACKUP_DIR" >> update_summary.md
+          fi
+          
+          echo "" >> update_summary.md
+          echo "**Available Assessment Types:**" >> update_summary.md
+          for file in review-checklists/checklists/*_checklist.en.json; do
+            if [ -f "$file" ]; then
+              basename=$(basename "$file" _checklist.en.json)
+              echo "- $basename" >> update_summary.md
+            fi
+          done
+          
+          echo "" >> update_summary.md
+          echo "✅ Assessment tool updated with latest Azure checklists!"
+
+      - name: Commit and push changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Add all changes
+          git add .
+          
+          # Check if there are changes to commit
+          if git diff --staged --quiet; then
+            echo "ℹ️ No changes to commit"
+          else
+            git commit -m "🔄 Update checklists from Azure/review-checklists ($(date +%Y-%m-%d))"
+            git push
+            echo "✅ Changes committed and pushed"
+          fi
+
+      - name: Create or update summary issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const summary = fs.readFileSync('update_summary.md', 'utf8');
+            
+            // Look for existing summary issue
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: ['checklist-update']
+            });
+            
+            const title = `📋 Monthly Checklist Update - ${new Date().toISOString().slice(0, 7)}`;
+            
+            if (issues.data.length > 0) {
+              // Update existing issue
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issues.data[0].number,
+                title: title,
+                body: summary
+              });
+              console.log('✅ Updated existing summary issue');
+            } else {
+              // Create new issue
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: summary,
+                labels: ['checklist-update']
+              });
+              console.log('✅ Created new summary issue');
+            }
