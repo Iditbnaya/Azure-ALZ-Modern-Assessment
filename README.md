@@ -1,6 +1,7 @@
 # 🏗️ ALZ Assessment Tool
 
 > **Interactive Azure Landing Zone Assessment Tool with Automated Checklist Updates**
+![alt text](image.png)
 
 A comprehensive web-based assessment tool that helps organizations evaluate their Azure implementations against Microsoft's best practices and recommendations. Features automated monthly updates from the official Azure review checklists repository.
 
