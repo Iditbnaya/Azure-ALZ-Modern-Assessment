@@ -53,7 +53,8 @@ cd Azure-ALZ-Modern-Assessment
 # Start the development server
 .\serve.ps1                          # Windows PowerShell (auto-opens browser)
 # OR
-python .\serve.py                    # Python (auto-opens browser)
+python 
+.\serve.py                    # Python (auto-opens browser)
 # OR
 cd web-assessment && python -m http.server 8000  # Manual
 
