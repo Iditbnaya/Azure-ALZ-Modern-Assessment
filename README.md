@@ -5,6 +5,8 @@
 
 A comprehensive web-based assessment tool that helps organizations evaluate their Azure implementations against Microsoft's best practices and recommendations. Features automated monthly updates directly from the official Azure review checklists repository.
 
+🎥 **[Watch Demo Video](https://www.youtube.com/watch?v=bqEBs0mMkyo)** - See the tool in action!
+
 **Created by**: [Idit Bnaya](https://github.com/Iditbnaya)
 
 ## 📜 Attribution & Credits
@@ -42,6 +44,19 @@ A comprehensive web-based assessment tool that helps organizations evaluate thei
 - 🔍 **Smart Import**: Intelligent column mapping handles typos and format variations
 
 ![alt text](image-1.png)
+
+## 🎥 Video Demo
+
+**[📺 Watch the Full Demo on YouTube](https://www.youtube.com/watch?v=bqEBs0mMkyo)**
+
+See the Azure Landing Zone Assessment Tool in action! This comprehensive video walkthrough demonstrates:
+- 🎯 How to load and navigate different assessment types
+- 📤 Excel import/export functionality
+- 💬 Adding comments and tracking progress
+- 📊 Generating PowerPoint reports
+- ⚡ Performance optimizations and diagnostic features
+
+*Perfect for getting started or sharing with your team!*
 
 ## 🚀 Quick Start
 
@@ -247,6 +262,7 @@ All tests should pass (100% success rate) before production deployment. See [web
 
 ## 📚 Documentation
 
+- 🎥 **[Video Demo](https://www.youtube.com/watch?v=bqEBs0mMkyo)** - Complete walkthrough and feature demonstration
 - 📜 **[Credits & Attribution](CREDITS.md)** - Full attribution to Azure Review Checklists and contributors
 - ⚙️ **[Workflow Documentation](.github/workflows/README.md)** - GitHub Actions details
 - 🔄 **[Sync Script Guide](sync-checklists.ps1)** - Manual checklist synchronization
