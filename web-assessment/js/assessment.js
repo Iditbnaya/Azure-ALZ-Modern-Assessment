@@ -155,14 +155,75 @@ class AssessmentManager {
         const startIndex = (this.currentPage - 1) * this.itemsPerPage;
         const endIndex = startIndex + this.itemsPerPage;
 
+        // Add filter summary if filters are active
+        let html = '';
+        if (this.hasActiveFilters()) {
+            html += this.renderFilterSummary(filteredItems);
+        }
+
         // Render grouped items with pagination
-        container.innerHTML = this.renderGroupedItems(groupedItems, startIndex, endIndex);
+        html += this.renderGroupedItems(groupedItems, startIndex, endIndex);
+        container.innerHTML = html;
 
         // Render pagination if needed
         this.renderPagination(totalPages, allItems.length);
 
         // Update progress after rendering
         this.updateProgress();
+    }
+
+    /**
+     * Check if any filters are currently active
+     */
+    hasActiveFilters() {
+        return this.currentFilters.category || 
+               this.currentFilters.severity || 
+               this.currentFilters.status || 
+               this.currentFilters.search;
+    }
+
+    /**
+     * Render filter summary showing total counts across all categories
+     */
+    renderFilterSummary(filteredItems) {
+        const checklist = this.dataLoader.getCurrentChecklist();
+        if (!checklist || !checklist.items) return '';
+
+        // Calculate totals across ALL items (not just filtered)
+        const totalStats = { High: 0, Medium: 0, Low: 0, total: checklist.items.length };
+        checklist.items.forEach(item => {
+            if (item.severity === 'High') totalStats.High++;
+            else if (item.severity === 'Medium') totalStats.Medium++;
+            else if (item.severity === 'Low') totalStats.Low++;
+        });
+
+        // Calculate filtered stats
+        const filteredStats = { High: 0, Medium: 0, Low: 0 };
+        filteredItems.forEach(item => {
+            if (item.severity === 'High') filteredStats.High++;
+            else if (item.severity === 'Medium') filteredStats.Medium++;
+            else if (item.severity === 'Low') filteredStats.Low++;
+        });
+
+        return `
+            <div class="filter-summary">
+                <div class="filter-summary-header">
+                    <i class="fas fa-filter"></i>
+                    <span>Showing ${filteredItems.length} of ${totalStats.total} items</span>
+                </div>
+                <div class="filter-summary-stats">
+                    <span class="stat-badge severity-high">
+                        ${filteredStats.High} / ${totalStats.High} High
+                    </span>
+                    <span class="stat-badge severity-medium">
+                        ${filteredStats.Medium} / ${totalStats.Medium} Medium
+                    </span>
+                    <span class="stat-badge severity-low">
+                        ${filteredStats.Low} / ${totalStats.Low} Low
+                    </span>
+                </div>
+            </div>
+        `;
     }
 
     /**
@@ -218,13 +279,28 @@ class AssessmentManager {
             const categoryEndIndex = currentIndex + items.length;
 
             if (categoryEndIndex > startIndex && categoryStartIndex < endIndex) {
+                // Get total items in this category (not just filtered)
+                let totalInCategory = items.length;
+                let displayText = `${totalInCategory} items`;
+                
+                const checklist = this.dataLoader.getCurrentChecklist();
+                if (checklist && checklist.items) {
+                    const allCategoryItems = checklist.items.filter(
+                        item => item.category === category
+                    );
+                    totalInCategory = allCategoryItems.length;
+                    displayText = items.length < totalInCategory 
+                        ? `${items.length} of ${totalInCategory} items` 
+                        : `${totalInCategory} items`;
+                }
+                
                 // Add category header
                 html += `
                     <div class="category-section">
                         <div class="category-header">
                             <h3><i class="fas fa-folder"></i> ${category}</h3>
                             <div class="category-stats">
-                                <span class="item-count">${items.length} items</span>
+                                <span class="item-count">${displayText}</span>
                                 <span class="severity-breakdown">
                                     ${this.getCategorySeverityBreakdown(items)}
                                 </span>
@@ -256,16 +332,35 @@ class AssessmentManager {
 
     /**
      * Get severity breakdown for a category
-     * @param {Array} items - Items in the category
+     * @param {Array} items - Items in the filtered category
      * @returns {string} HTML for severity breakdown
      */
     getCategorySeverityBreakdown(items) {
+        // Get the category name from the first item
+        const categoryName = items.length > 0 ? items[0].category : '';
+        
         const severities = { High: 0, Medium: 0, Low: 0 };
-        items.forEach(item => {
-            if (severities.hasOwnProperty(item.severity)) {
-                severities[item.severity]++;
-            }
-        });
+        
+        // Get all items in this category (not just filtered ones) to show total numbers
+        const checklist = this.dataLoader.getCurrentChecklist();
+        if (checklist && checklist.items) {
+            const allItemsInCategory = checklist.items.filter(
+                item => item.category === categoryName
+            );
+            
+            allItemsInCategory.forEach(item => {
+                if (severities.hasOwnProperty(item.severity)) {
+                    severities[item.severity]++;
+                }
+            });
+        } else {
+            // Fallback: count only filtered items if checklist is not available
+            items.forEach(item => {
+                if (severities.hasOwnProperty(item.severity)) {
+                    severities[item.severity]++;
+                }
+            });
+        }
 
         return `
             <span class="severity-count severity-high">${severities.High} High</span>

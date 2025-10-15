@@ -6,6 +6,7 @@
 class DataLoader {
     constructor() {
         this.currentChecklist = null;
+        this.currentLanguage = 'en'; // Default language
         this.availableChecklists = {
             'main': 'Complete ALZ Assessment (Main Checklist)',
             'alz': 'Azure Landing Zone',
@@ -29,15 +30,53 @@ class DataLoader {
             'sqldb': 'SQL Database',
             'azure_storage': 'Azure Storage'
         };
+        this.availableLanguages = {
+            'en': 'English',
+            'es': 'Español',
+            'ja': '日本語',
+            'ko': '한국어',
+            'pt': 'Português',
+            'zh-Hant': '繁體中文'
+        };
+        
+        // Load saved language preference
+        const savedLanguage = localStorage.getItem('selectedLanguage');
+        if (savedLanguage && this.availableLanguages[savedLanguage]) {
+            this.currentLanguage = savedLanguage;
+        }
     }
 
     /**
-     * Load checklist data based on type
+     * Set the current language and save preference
+     * @param {string} language - Language code (en, es, ja, ko, pt, zh-Hant)
+     */
+    setLanguage(language) {
+        if (this.availableLanguages[language]) {
+            this.currentLanguage = language;
+            localStorage.setItem('selectedLanguage', language);
+            console.log(`Language set to: ${this.availableLanguages[language]} (${language})`);
+        }
+    }
+
+    /**
+     * Get the current language
+     * @returns {string} Current language code
+     */
+    getLanguage() {
+        return this.currentLanguage;
+    }
+
+    /**
+     * Load checklist data based on type and language
      * @param {string} checklistType - Type of checklist (alz, aks, etc.)
+     * @param {string} language - Language code (optional, uses current language if not specified)
      * @returns {Promise<Object>} Parsed checklist data
      */
-    async loadChecklist(checklistType) {
+    async loadChecklist(checklistType, language = null) {
         try {
+            // Use provided language or current language
+            const lang = language || this.currentLanguage;
+            
             // If requesting 'main' or if no specific type, load the main checklist.json file
             if (checklistType === 'main' || !checklistType) {
                 const mainChecklistPath = 'checklist.json';
@@ -52,10 +91,11 @@ class DataLoader {
                 throw new Error('Main checklist.json not found or invalid');
             }
 
-            // For specific checklist types, load from the specific checklist files
-            const filename = `${checklistType}_checklist.en.json`;
+            // For specific checklist types, load from the specific checklist files with language
+            const filename = `${checklistType}_checklist.${lang}.json`;
             const checklistPath = `review-checklists/checklists/${filename}`;
             
+            console.log(`Loading checklist: ${filename} (${this.availableLanguages[lang]})`);
             let checklistData = await this.fetchJSON(checklistPath);
             
             if (!checklistData || !checklistData.items) {

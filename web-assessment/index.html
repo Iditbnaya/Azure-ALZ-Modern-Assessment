@@ -1,4 +1,17 @@
 <!DOCTYPE html>
+<!--
+    Azure Landing Zone Assessment Tool
+    
+    This tool uses checklist content from the Azure Review Checklists project:
+    - Source: https://github.com/Azure/review-checklists
+    - Copyright (c) Microsoft Corporation
+    - License: MIT License
+    - Authors: Microsoft FTA team and community contributors
+    
+    This web interface provides enhanced visualization and tracking capabilities
+    for Azure assessments while maintaining compatibility with the original
+    checklist format.
+-->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -14,6 +27,8 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- SheetJS for Excel file support -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- PptxGenJS for PowerPoint generation -->
+    <script src="https://unpkg.com/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0078d4">
 </head>
@@ -27,6 +42,14 @@
                     <h1>Azure Landing Zone Assessment</h1>
                 </div>
                 <div class="header-controls">
+                    <select id="languageSelector" class="language-selector" title="Select Language">
+                        <option value="en">🇬🇧 English</option>
+                        <option value="es">🇪🇸 Español</option>
+                        <option value="ja">🇯🇵 日本語</option>
+                        <option value="ko">🇰🇷 한국어</option>
+                        <option value="pt">🇵🇹 Português</option>
+                        <option value="zh-Hant">🇨🇳 繁體中文</option>
+                    </select>
                     <select id="checklistSelector" class="checklist-selector">
                         <option value="">Select Assessment Type</option>
                         <option value="alz">Azure Landing Zone</option>
@@ -62,8 +85,22 @@
                     <div id="uploadLoader" class="upload-loader" style="display: none;">
                         <div class="upload-loader-content">
                             <div class="upload-spinner"></div>
-                            <p>Processing file...</p>
+                            <p class="loader-text">Processing file...</p>
                             <small>Please wait while we process your assessment file.</small>
+                            <div class="diagnostic-toggle">
+                                <button id="showDiagnostics" class="btn-link" onclick="document.getElementById('diagnosticLogs').style.display='block'; this.style.display='none';">
+                                    <i class="fas fa-bug"></i> Show Diagnostic Logs
+                                </button>
+                            </div>
+                            <div id="diagnosticLogs" class="diagnostic-logs" style="display: none;">
+                                <div class="diagnostic-header">
+                                    <strong>📊 Diagnostic Information</strong>
+                                    <button onclick="this.parentElement.parentElement.style.display='none'; document.getElementById('showDiagnostics').style.display='inline-block';" class="btn-close-diag">×</button>
+                                </div>
+                                <div id="diagnosticContent" class="diagnostic-content">
+                                    Open browser console (F12) to view detailed logs...
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -111,6 +148,21 @@
                             <li>Click "Load Assessment" to begin</li>
                             <li>Work through the recommendations and track your progress</li>
                         </ol>
+                        
+                        <div class="info-box" style="margin-top: 20px; padding: 15px; background: #e8f4fd; border-left: 4px solid #0078d4; border-radius: 4px;">
+                            <h4 style="margin-top: 0; color: #0078d4;">
+                                <i class="fas fa-info-circle"></i> Using Azure Review Checklists Excel Files
+                            </h4>
+                            <p style="margin-bottom: 10px;">You can import assessments from Azure Review Checklists macro-free Excel files:</p>
+                            <ol style="margin: 0; padding-left: 20px;">
+                                <li>Download a <a href="https://github.com/Azure/review-checklists/tree/main/spreadsheet/macrofree" target="_blank" style="color: #0078d4; text-decoration: underline;">macro-free template</a></li>
+                                <li>Fill in your Status and Comments columns</li>
+                                <li>Use "Upload Assessment" button to import your data</li>
+                            </ol>
+                            <p style="margin-top: 10px; margin-bottom: 0; font-size: 0.9em; color: #666;">
+                                <strong>Supported formats:</strong> Fulfilled, Open, Not Required, Not Verified
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -233,6 +285,31 @@
                             <div class="stat-label">Open</div>
                         </div>
                     </div>
+                    
+                    <!-- Category Breakdown Table -->
+                    <div class="category-breakdown-section">
+                        <h3>Category Status Breakdown</h3>
+                        <div class="table-container">
+                            <table id="categoryBreakdownTable" class="category-table">
+                                <thead>
+                                    <tr>
+                                        <th>Category</th>
+                                        <th>Not Verified</th>
+                                        <th>Open</th>
+                                        <th>Fulfilled</th>
+                                        <th>Total</th>
+                                        <th>Progress</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="categoryBreakdownBody">
+                                    <!-- Will be populated by JavaScript -->
+                                </tbody>
+                                <tfoot id="categoryBreakdownFooter">
+                                    <!-- Totals row will be populated by JavaScript -->
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Export Panel -->
@@ -258,6 +335,10 @@
                                 <label class="format-option">
                                     <input type="radio" name="exportFormat" value="html">
                                     <span>HTML Report</span>
+                                </label>
+                                <label class="format-option">
+                                    <input type="radio" name="exportFormat" value="powerpoint">
+                                    <span><i class="fas fa-file-powerpoint"></i> PowerPoint</span>
                                 </label>
                             </div>
                         </div>
@@ -301,6 +382,27 @@
                 </div>
             </div>
         </main>
+        
+        <!-- Footer with Attribution -->
+        <footer style="background: #f5f5f5; border-top: 1px solid #e0e0e0; padding: 20px; text-align: center; font-size: 0.9em; color: #666;">
+            <div style="max-width: 1200px; margin: 0 auto;">
+                <p style="margin: 5px 0;">
+                    <strong>Content Source:</strong> 
+                    <a href="https://github.com/Azure/review-checklists" target="_blank" rel="noopener" style="color: #0078d4; text-decoration: none;">
+                        Azure/review-checklists
+                    </a>
+                    © Microsoft Corporation
+                </p>
+                <p style="margin: 5px 0; font-size: 0.85em;">
+                    All assessment recommendations and best practices are authored and maintained by Microsoft FTA team and community contributors.
+                    This tool provides an enhanced web interface. 
+                    <a href="../CREDITS.md" target="_blank" style="color: #0078d4; text-decoration: none;">View full credits</a>
+                </p>
+                <p style="margin: 5px 0; font-size: 0.85em;">
+                    Licensed under MIT License | Not official Microsoft software | Provided "AS IS" without warranty
+                </p>
+            </div>
+        </footer>
     </div>
 
     <!-- Scripts -->

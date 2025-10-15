@@ -1,0 +1,537 @@
+{
+    "categories": [
+        {
+            "name": "網路拓撲和連接"
+        }
+    ],
+    "items": [
+        {
+            "category": "網路拓撲和連接",
+            "guid": "b71ca41b-3a80-48f3-a6cd-22cdf197c1cf",
+            "id": "A01.02",
+            "link": "https://learn.microsoft.com/azure/cloud-adoption-framework/ready/landing-zone/design-area/resource-org-management-groups#management-groups-in-the-azure-landing-zone-accelerator",
+            "severity": "中等",
+            "subcategory": "應用交付",
+            "text": "在面向內部 （公司） 和面向外部的應用程式 （線上） 的登陸區域內執行應用程式交付。",
+            "training": "https://learn.microsoft.com/learn/paths/secure-application-delivery/",
+            "waf": "安全"
+        },
+        {
+            "category": "網路拓撲和連接",
+            "graph": "resources | where type == 'microsoft.network/applicationgateways' | project id, compliant = properties.sku.name in ('Standard_v2', 'WAF_v2') | project id,compliant",
+            "guid": "553585a6-abe0-11ed-afa1-0242ac120002",
+            "id": "A01.03",
+            "link": "https://learn.microsoft.com/azure/application-gateway/overview-v2",
+            "service": "App Gateway",
+            "severity": "中等",
+            "subcategory": "應用程式閘道",
+            "text": "確保使用的是應用程式閘道 v2 SKU",
+            "training": "https://learn.microsoft.com/learn/paths/secure-application-delivery/",
+            "waf": "安全"
+        },
+        {
+            "category": "網路拓撲和連接",
+            "graph": "resources | where type == 'microsoft.network/loadbalancers' | project id, compliant=(tolower(sku.name) == 'standard')",
+            "guid": "4e35fbf5-0ae2-48b2-97ce-753353edbd1a",
+            "id": "A01.04",
+            "link": "https://learn.microsoft.com/azure/load-balancer/load-balancer-overview",
+            "service": "Load Balancer",
+            "severity": "中等",
+            "subcategory": "負載均衡器",
+            "text": "確保將標準 SKU 用於 Azure 負載均衡器",
+            "waf": "安全"
+        },
+        {
+            "category": "網路拓撲和連接",
+            "guid": "9432621a-8397-4654-a882-5bc856b7ef83",
+            "id": "A01.05",
+            "link": "https://learn.microsoft.com/azure/load-balancer/load-balancer-standard-availability-zones",
+            "service": "Load Balancer",
+            "severity": "中等",
+            "subcategory": "負載均衡器",
+            "text": "確保您的負載均衡器前端IP位址是區域冗餘的（除非您需要可用區前端）。",
+            "waf": "安全"
+        },
+        {
+            "category": "網路拓撲和連接",
+            "graph": "resources | where type=='microsoft.network/applicationgateways' | extend subnetId = tostring(properties.gatewayIPConfigurations[0].properties.subnet.id) | project id, subnetId | join (resources | where type=='microsoft.network/virtualnetworks' | project id,subnets=properties.subnets | mv-expand subnets | mv-expand subnets.properties.addressPrefixes | project id, subnetId = tostring(subnets.id), prefix1 = subnets.properties.addressPrefix, prefix2 = subnets.properties.addressPrefixes | mv-expand prefix2 | extend prefix = iff(isnotnull(prefix1), prefix1, prefix2) | extend subnetPrefixLength = split(prefix, '/')[1])on subnetId | extend compliant = (subnetPrefixLength <= 24 or subnetPrefixLength == 64) | distinct id,compliant",
+            "guid": "dfc50f87-3800-424c-937b-ed5f186e7c15",
+            "id": "A01.06",
+            "link": "https://learn.microsoft.com/azure/application-gateway/configuration-infrastructure#size-of-the-subnet",
+            "service": "App Gateway",
+            "severity": "中等",
+            "subcategory": "應用程式閘道",
+            "text": "應用程式閘道 v2 應部署在IP前綴等於或大於 /24 的子網中",
+            "training": "https://learn.microsoft.com/learn/paths/secure-application-delivery/",
+            "waf": "安全"
+        },
+        {
+            "category": "網路拓撲和連接",
+            "description": "一般來說，反向代理（尤其是 WAF）的管理更接近應用程式而不是網路，因此它們與應用程式屬於同一訂閱。如果應用程式閘道和 WAF 由一個團隊管理，則將其集中在連接訂閱中可能是可以的。",
+            "guid": "48b662d6-d15f-4512-a654-98f6dfe237de",
+            "id": "A01.07",
+            "link": "https://learn.microsoft.com/azure/web-application-firewall/ag/ag-overview",
+            "service": "App Gateway",
+            "severity": "中等",
+            "subcategory": "應用程式閘道",
+            "text": "部署 Azure 應用程式閘道 v2 或合作夥伴 NVA，用於在登陸區虛擬網路中代理入站 HTTP（S） 連接，以及它們所保護的應用。",
+            "training": "https://learn.microsoft.com/learn/paths/secure-application-delivery/",
+            "waf": "安全"
+        },
+        {
+            "category": "網路拓撲和連接",
+            "guid": "f109e1f3-c79b-4f14-82de-6b5c22314d08",
+            "id": "A01.08",
+            "link": "https://learn.microsoft.com/azure/web-application-firewall/ag/ag-overview",
+            "service": "App Gateway",
+            "severity": "中等",
+            "subcategory": "應用程式閘道",
+            "text": "對應用程式登陸區域中的所有公共IP位址使用 DDoS 網路或IP保護計畫。",
+            "training": "https://learn.microsoft.com/learn/paths/secure-networking-infrastructure/",
+            "waf": "安全"
+        },
+        {
+            "category": "網路拓撲和連接",
+            "graph": "resources | where type =~ 'microsoft.network/applicationGateways' | extend compliant = (isnotnull(properties.autoscaleConfiguration) and properties.autoscaleConfiguration.minCapacity >= 2) | distinct id,compliant",
+            "guid": "135bf4ac-f9db-461f-b76b-2ee9e30b12c0",
+            "id": "A01.09",
+            "link": "https://learn.microsoft.com/azure/application-gateway/application-gateway-autoscaling-zone-redundant",
+            "service": "App Gateway",
+            "severity": "中等",
+            "subcategory": "應用程式閘道",
+            "text": "配置自動縮放，最小實例數為 2。",
+            "training": "https://learn.microsoft.com/learn/paths/secure-application-delivery/",
+            "waf": "可靠性"
+        },
+        {
+            "category": "網路拓撲和連接",
+            "graph": "resources | where type =~ 'microsoft.network/applicationGateways' | extend compliant = (isnotnull(zones) and array_length(zones) > 1) | distinct id,compliant",
+            "guid": "060c6964-52b5-48db-af8b-83e4b2d85349",
+            "id": "A01.10",
+            "link": "https://learn.microsoft.com/azure/reliability/migrate-app-gateway-v2",
+            "service": "App Gateway",
+            "severity": "中等",
+            "subcategory": "應用程式閘道",
+            "text": "跨可用區部署應用程式閘道",
+            "training": "https://learn.microsoft.com/learn/paths/secure-application-delivery/",
+            "waf": "可靠性"
+        },
+        {
+            "category": "網路拓撲和連接",
+            "guid": "3f29812b-2363-4cef-b179-b599de0d5973",
+            "id": "A01.12",
+            "link": "https://learn.microsoft.com/azure/ddos-protection/ddos-protection-overview",
+            "service": "Front Door",
+            "severity": "中等",
+            "subcategory": "應用交付",
+            "text": "使用 Front Door 和應用程式閘道幫助保護 HTTP/S 應用時，請在 Front Door 中使用 WAF 策略。鎖定應用程式閘道以僅接收來自 Front Door 的流量。",
+            "training": "https://learn.microsoft.com/learn/paths/secure-networking-infrastructure/",
+            "waf": "安全"
+        },
+        {
+            "ammp": true,
+            "category": "網路拓撲和連接",
+            "guid": "cd4cd21b-0881-437f-9e6c-4cfd3e504547",
+            "id": "A01.13",
+            "link": "https://learn.microsoft.com/azure/web-application-firewall/ag/ag-overview",
+            "service": "Traffic Manager",
+            "severity": "高",
+            "subcategory": "流量管理員",
+            "text": "使用流量管理器交付跨 HTTP/S 以外的協定的全域應用。",
+            "training": "https://learn.microsoft.com/learn/paths/secure-networking-infrastructure/",
+            "waf": "可靠性"
+        },
+        {
+            "category": "網路拓撲和連接",
+            "guid": "3b4b3e88-a459-4ed5-a22f-644dfbc58204",
+            "id": "A01.14",
+            "link": "https://learn.microsoft.com/azure/active-directory/app-proxy/application-proxy#how-application-proxy-works",
+            "service": "Entra",
+            "severity": "低",
+            "subcategory": "應用交付",
+            "text": "如果使用者只需要存取內部應用程式，是否考慮將 Microsoft Entra ID 應用程式代理作為 Azure 虛擬桌面 （AVD） 的替代方案？",
+            "training": "https://learn.microsoft.com/learn/modules/configure-azure-ad-application-proxy/",
+            "waf": "安全"
+        },
+        {
+            "category": "網路拓撲和連接",
+            "guid": "01ca7cf1-5754-442d-babb-8ba6772e5c30",
+            "id": "A01.15",
+            "link": "https://learn.microsoft.com/azure/active-directory/app-proxy/application-proxy#how-application-proxy-works",
+            "service": "Entra",
+            "severity": "中等",
+            "subcategory": "應用交付",
+            "text": "要減少網路中為傳入連接打開的防火牆埠數，請考慮使用 Microsoft Entra ID 應用程式代理為遠端使用者提供對內部應用程式的安全且經過身份驗證的訪問。",
+            "training": "https://learn.microsoft.com/learn/paths/implement-applications-external-access-azure-ad/",
+            "waf": "安全"
+        },
+        {
+            "ammp": true,
+            "category": "網路拓撲和連接",
+            "graph": "resources | where type=='microsoft.network/loadbalancers' | extend countOutRules=array_length(properties.outboundRules) | extend compliant = (countOutRules == 0) | distinct id,compliant",
+            "guid": "97a2fd46-64b0-1dfa-b72d-9c8869496d75",
+            "id": "A01.22",
+            "link": "https://learn.microsoft.com/azure/nat-gateway/nat-overview#outbound-connectivity",
+            "service": "Load Balancer",
+            "severity": "高",
+            "subcategory": "負載均衡器",
+            "text": "使用 Azure NAT 閘道而不是負載均衡器出站規則來提高 SNAT 可伸縮性",
+            "waf": "可靠性"
+        },
+        {
+            "ammp": true,
+            "category": "網路拓撲和連接",
+            "graph": "resources | where type == 'microsoft.network/applicationgatewaywebapplicationfirewallpolicies' | mv-expand properties.managedRules.managedRuleSets | project id, rulesettype = properties_managedRules_managedRuleSets.ruleSetType | extend compliant1 = (rulesettype == 'Microsoft_BotManagerRuleSet') | project id, compliant1 | summarize compliant = max(compliant1) by id",
+            "guid": "2f8e81eb-8e68-4026-8b1f-70f9b05f7cf9",
+            "id": "A01.37",
+            "link": "https://learn.microsoft.com/azure/web-application-firewall/ag/bot-protection",
+            "service": "App Gateway",
+            "severity": "高",
+            "subcategory": "應用程式閘道",
+            "text": "啟用 Azure 應用程式閘道 WAF 機器人保護規則集。機器人規則檢測好的機器人和壞的機器人。",
+            "waf": "安全"
+        },
+        {
+            "ammp": true,
+            "category": "網路拓撲和連接",
+            "guid": "8ea8e0d4-84e8-4b33-aeab-493f6391b4d6",
+            "id": "A01.38",
+            "link": "https://learn.microsoft.com/azure/web-application-firewall/ag/application-gateway-waf-request-size-limits#request-body-inspection",
+            "service": "App Gateway",
+            "severity": "高",
+            "subcategory": "應用程式閘道",
+            "text": "確保 Azure 應用程式閘道 WAF 策略中是否啟用了請求正文檢查功能。",
+            "waf": "安全"
+        },
+        {
+            "ammp": true,
+            "category": "網路拓撲和連接",
+            "guid": "a4dd86d3-5ffa-408c-b660-cce073d085b8",
+            "id": "A01.39",
+            "link": "https://learn.microsoft.com/azure/web-application-firewall/ag/best-practices#tune-your-waf",
+            "service": "App Gateway",
+            "severity": "高",
+            "subcategory": "應用程式閘道",
+            "text": "在檢測模式下優化工作負載的 Azure 應用程式閘道 WAF。減少誤報檢測。",
+            "waf": "安全"
+        },
+        {
+            "ammp": true,
+            "category": "網路拓撲和連接",
+            "guid": "baf8e317-2397-4d49-b3d1-0dcc16d8778d",
+            "id": "A01.40",
+            "link": "https://learn.microsoft.com/azure/web-application-firewall/ag/policy-overview?source=recommendations",
+            "service": "App Gateway",
+            "severity": "高",
+            "subcategory": "應用程式閘道",
+            "text": "在「防護」模式下部署應用程式閘道的 WAF 策略。",
+            "waf": "安全"
+        },
+        {
+            "category": "網路拓撲和連接",
+            "guid": "43fae595-8a32-4299-a69e-0f32c454dcc9",
+            "id": "A01.41",
+            "link": "https://learn.microsoft.com/azure/web-application-firewall/ag/rate-limiting-overview",
+            "service": "App Gateway",
+            "severity": "中等",
+            "subcategory": "應用程式閘道",
+            "text": "向 Azure 應用程式閘道 WAF 添加速率限制。Rate limit 會阻止客戶端在短時間內意外或故意發送大量流量。",
+            "waf": "安全"
+        },
+        {
+            "category": "網路拓撲和連接",
+            "guid": "041e0ad8-7b12-4694-a0b7-a0e25ee2470f",
+            "id": "A01.42",
+            "link": "https://learn.microsoft.com/azure/web-application-firewall/ag/rate-limiting-overview#rate-limiting-details",
+            "service": "App Gateway",
+            "severity": "中等",
+            "subcategory": "應用程式閘道",
+            "text": "對 Azure 應用程式閘道 WAF 速率限制使用高閾值。高速率限制閾值可避免阻止合法流量，同時仍可針對可能使基礎設施不堪重負的極大量請求提供保護。",
+            "waf": "安全"
+        },
+        {
+            "category": "網路拓撲和連接",
+            "guid": "99937189-ff78-492a-b9ca-18d828d82b37",
+            "id": "A01.43",
+            "link": "https://learn.microsoft.com/azure/web-application-firewall/ag/best-practices#geo-filtering-best-practices",
+            "service": "App Gateway",
+            "severity": "低",
+            "subcategory": "應用程式閘道",
+            "text": "如果您不希望收到來自所有地理區域的流量，請使用地理篩選條件來阻止來自非預期國家/地區的流量。",
+            "waf": "安全"
+        },
+        {
+            "category": "網路拓撲和連接",
+            "guid": "349a15c1-52f4-4319-9078-3895d95ecafd",
+            "id": "A01.44",
+            "link": "https://learn.microsoft.com/azure/web-application-firewall/ag/geomatch-custom-rules",
+            "service": "App Gateway",
+            "severity": "中等",
+            "subcategory": "應用程式閘道",
+            "text": "在使用 Azure 應用程式閘道 WAF 對流量進行異地篩選時，指定未知 （ZZ） 位置。避免在IP位址無法進行異地匹配時意外阻止合法請求。",
+            "waf": "安全"
+        },
+        {
+            "category": "網路拓撲和連接",
+            "guid": "6c19dfd5-a61c-436c-9001-491b9b3d0228",
+            "id": "A01.45",
+            "link": "https://learn.microsoft.com/azure/web-application-firewall/ag/best-practices#use-the-latest-ruleset-versions",
+            "service": "App Gateway",
+            "severity": "中等",
+            "subcategory": "應用程式閘道",
+            "text": "使用最新的 Azure 應用程式閘道 WAF 規則集版本。規則集更新會定期更新，以考慮當前的威脅形勢。",
+            "waf": "安全"
+        },
+        {
+            "category": "網路拓撲和連接",
+            "guid": "f84106a2-2e9e-42ac-add6-d3416ecfed53",
+            "id": "A01.46",
+            "link": "https://learn.microsoft.com/azure/web-application-firewall/ag/best-practices#add-diagnostic-settings-to-save-your-wafs-logs",
+            "service": "App Gateway",
+            "severity": "中等",
+            "subcategory": "應用程式閘道",
+            "text": "添加診斷設置以保存 Azure 應用程式閘道 WAF 紀錄。",
+            "waf": "操作"
+        },
+        {
+            "category": "網路拓撲和連接",
+            "guid": "92664c60-47e3-4591-8b1b-8d557656e686",
+            "id": "A01.48",
+            "link": "https://learn.microsoft.com/azure/web-application-firewall/ag/best-practices#send-logs-to-microsoft-sentinel",
+            "service": "App Gateway",
+            "severity": "中等",
+            "subcategory": "應用程式閘道",
+            "text": "將 Azure 應用程式閘道 WAF 紀錄發送到 Microsoft Sentinel。",
+            "waf": "操作"
+        },
+        {
+            "category": "網路拓撲和連接",
+            "guid": "ba0e9b26-6e0d-4ec8-8541-023c00afd5b7",
+            "id": "A01.50",
+            "link": "https://learn.microsoft.com/azure/web-application-firewall/ag/best-practices#define-your-waf-configuration-as-code",
+            "service": "App Gateway",
+            "severity": "中等",
+            "subcategory": "應用程式閘道",
+            "text": "將 Azure 應用程式閘道 WAF 設定定義為代碼。通過使用代碼，您可以更輕鬆地採用新的規則集版本並獲得額外的保護。",
+            "waf": "操作"
+        },
+        {
+            "category": "網路拓撲和連接",
+            "guid": "f17ec301-8470-4afd-aabc-c1fdfe47dcc0",
+            "id": "A01.51",
+            "link": "https://learn.microsoft.com/azure/web-application-firewall/ag/policy-overview",
+            "service": "App Gateway",
+            "severity": "中等",
+            "subcategory": "應用程式閘道",
+            "text": "使用 WAF 策略而不是舊版 WAF 配置。",
+            "waf": "操作"
+        },
+        {
+            "category": "網路拓撲和連接",
+            "guid": "d4eb8667-f8cb-4cdd-94e6-2f967ba98f88",
+            "id": "A01.52",
+            "link": "https://learn.microsoft.com/azure/virtual-wan/scenario-secured-hub-app-gateway",
+            "service": "App Gateway",
+            "severity": "中等",
+            "subcategory": "應用程式閘道",
+            "text": "篩選後端中的入站流量，使其僅接受來自應用程式閘道子網的連接，例如使用NSG的連接。",
+            "waf": "安全"
+        },
+        {
+            "category": "網路拓撲和連接",
+            "guid": "a66f0fd8-2ca4-422e-8df3-235148127ca2",
+            "id": "A01.54",
+            "link": "https://learn.microsoft.com/azure/application-gateway/ssl-overview",
+            "service": "App Gateway",
+            "severity": "高",
+            "subcategory": "應用程式閘道",
+            "text": "您應該對到後端伺服器的流量進行加密。",
+            "waf": "安全"
+        },
+        {
+            "category": "網路拓撲和連接",
+            "guid": "3dba65cb-834d-44d8-a3ca-a6aa2f1587be",
+            "id": "A01.55",
+            "link": "https://learn.microsoft.com/azure/web-application-firewall/overview",
+            "service": "App Gateway",
+            "severity": "高",
+            "subcategory": "應用程式閘道",
+            "text": "您應該使用 Web 應用程式防火牆。",
+            "waf": "安全"
+        },
+        {
+            "category": "網路拓撲和連接",
+            "guid": "0158fcb6-0bc1-4687-832f-cc7c359c22d2",
+            "id": "A01.56",
+            "link": "https://learn.microsoft.com/azure/application-gateway/redirect-overview",
+            "service": "App Gateway",
+            "severity": "中等",
+            "subcategory": "應用程式閘道",
+            "text": "將 HTTP 重定向到 HTTPS",
+            "waf": "安全"
+        },
+        {
+            "category": "網路拓撲和連接",
+            "guid": "bb697864-1b4c-43af-8667-90cc69aaed5f",
+            "id": "A01.57",
+            "link": "https://learn.microsoft.com/azure/application-gateway/how-application-gateway-works#modifications-to-the-request",
+            "service": "App Gateway",
+            "severity": "中等",
+            "subcategory": "應用程式閘道",
+            "text": "使用閘道託管的 Cookie 將流量從使用者工作階段定向到同一伺服器進行處理",
+            "waf": "操作"
+        },
+        {
+            "category": "網路拓撲和連接",
+            "guid": "ff353ad8-15fb-4ae8-9fc5-a85a36d36a35",
+            "id": "A01.58",
+            "link": "https://learn.microsoft.com/azure/application-gateway/configuration-http-settings",
+            "service": "App Gateway",
+            "severity": "高",
+            "subcategory": "應用程式閘道",
+            "text": "在計劃內服務更新期間啟用連接耗盡，以防止後端池的現有成員失去連接",
+            "waf": "安全"
+        },
+        {
+            "category": "網路拓撲和連接",
+            "guid": "c8741f03-45a4-4183-a6b8-139e0773b8b5",
+            "id": "A01.59",
+            "link": "https://learn.microsoft.com/azure/application-gateway/custom-error",
+            "service": "App Gateway",
+            "severity": "低",
+            "subcategory": "應用程式閘道",
+            "text": "創建自訂錯誤頁面以顯示個人化的用戶體驗",
+            "waf": "操作"
+        },
+        {
+            "category": "網路拓撲和連接",
+            "guid": "f850d46f-f5d7-4b17-b48c-a780741402e1",
+            "id": "A01.60",
+            "link": "https://learn.microsoft.com/azure/application-gateway/rewrite-http-headers-url",
+            "service": "App Gateway",
+            "severity": "中等",
+            "subcategory": "應用程式閘道",
+            "text": "編輯 HTTP 請求和回應標頭，以便更輕鬆地在用戶端和伺服器之間進行路由和資訊交換",
+            "waf": "安全"
+        },
+        {
+            "category": "網路拓撲和連接",
+            "guid": "eadc3164-4a0f-461c-85f1-1a372c04dfd1",
+            "id": "A01.61",
+            "link": "https://learn.microsoft.com/azure/frontdoor/front-door-overview",
+            "service": "App Gateway",
+            "severity": "中等",
+            "subcategory": "應用程式閘道",
+            "text": "配置 Front Door 以優化全域 Web 流量路由和頂級最終使用者性能，並通過快速全域故障轉移實現可靠性",
+            "waf": "性能"
+        },
+        {
+            "category": "網路拓撲和連接",
+            "guid": "29dcc19f-a8fa-4c35-8281-290577538793",
+            "id": "A01.62",
+            "link": "https://learn.microsoft.com/azure/load-balancer/load-balancer-overview",
+            "service": "App Gateway",
+            "severity": "中等",
+            "subcategory": "應用程式閘道",
+            "text": "使用傳輸層負載均衡",
+            "waf": "性能"
+        },
+        {
+            "category": "網路拓撲和連接",
+            "guid": "276898c1-af5e-4819-9e8e-049c7801ab9d",
+            "id": "A01.63",
+            "link": "https://learn.microsoft.com/azure/application-gateway/multiple-site-overview",
+            "service": "App Gateway",
+            "severity": "中等",
+            "subcategory": "應用程式閘道",
+            "text": "為單個閘道上的多個 Web 應用程式配置基於主機名稱或功能變數名稱的路由",
+            "waf": "安全"
+        },
+        {
+            "category": "網路拓撲和連接",
+            "guid": "5fe365b6-58e8-47ed-a8cf-5163850380a2",
+            "id": "A01.64",
+            "link": "https://learn.microsoft.com/azure/application-gateway/create-ssl-portal",
+            "service": "App Gateway",
+            "severity": "中等",
+            "subcategory": "應用程式閘道",
+            "text": "集中 SSL 證書管理以減少後端伺服器場的加密和解密開銷",
+            "waf": "安全"
+        },
+        {
+            "category": "網路拓撲和連接",
+            "guid": "fa64b4dd-35c2-4047-ac5c-45dfbf8b0db9",
+            "id": "A01.65",
+            "link": "https://learn.microsoft.com/azure/application-gateway/application-gateway-websocket",
+            "service": "App Gateway",
+            "severity": "低",
+            "subcategory": "應用程式閘道",
+            "text": "使用應用程式閘道實現對 WebSocket 和 HTTP/2 協定的本機支援",
+            "waf": "安全"
+        }
+    ],
+    "metadata": {
+        "name": "Azure Application Delivery Networking",
+        "state": "GA",
+        "timestamp": "September 23, 2024",
+        "waf": "all"
+    },
+    "severities": [
+        {
+            "name": "高"
+        },
+        {
+            "name": "中等"
+        },
+        {
+            "name": "低"
+        }
+    ],
+    "status": [
+        {
+            "description": "尚未查看此檢查",
+            "name": "未驗證"
+        },
+        {
+            "description": "存在與此檢查關聯的操作項",
+            "name": "打開"
+        },
+        {
+            "description": "此檢查已經過驗證，沒有與之關聯的其他操作項",
+            "name": "實現"
+        },
+        {
+            "description": "建議已理解，但當前要求不需要",
+            "name": "不需要"
+        },
+        {
+            "description": "不適用於當前設計",
+            "name": "不適用"
+        }
+    ],
+    "waf": [
+        {
+            "name": "可靠性"
+        },
+        {
+            "name": "安全"
+        },
+        {
+            "name": "成本"
+        },
+        {
+            "name": "操作"
+        },
+        {
+            "name": "性能"
+        }
+    ],
+    "yesno": [
+        {
+            "name": "是的"
+        },
+        {
+            "name": "不"
+        }
+    ]
+}

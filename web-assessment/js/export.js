@@ -61,6 +61,9 @@ class ExportManager {
             case 'html':
                 this.exportHTML(options);
                 break;
+            case 'powerpoint':
+                this.exportPowerPoint(options);
+                break;
             default:
                 console.error('Unknown export format:', selectedFormat);
         }
@@ -193,32 +196,35 @@ class ExportManager {
     }
 
     /**
-     * Convert data to CSV format
+     * Convert data to CSV format - Custom column order
      */
     convertToCSV(items, options) {
         if (!items || items.length === 0) {
             return 'No data to export';
         }
 
-        // Define CSV headers
+        // Define CSV headers - Custom order
+        // Order: id, design area, sub area, waf pillar, checklist item, description, severity, status, comment, more info, training, graph, guid
         const headers = [
-            'ID',
-            'Category',
-            'Subcategory',
-            'Text',
-            'Severity',
-            'WAF',
-            'Service',
-            'Status'
+            'id',
+            'design area',
+            'sub area',
+            'waf pillar',
+            'checklist item',
+            'description',
+            'severity',
+            'status'
         ];
 
-        if (options.includeComments) {
-            headers.push('Comment', 'Reviewed At', 'Reviewed By');
+        if (!options.templateFormat && options.includeComments) {
+            headers.push('comment');
         }
 
         if (options.includeLinks) {
-            headers.push('More Info Link', 'Training Link');
+            headers.push('more info', 'training');
         }
+
+        headers.push('graph', 'guid');
 
         // Create CSV content
         const csvRows = [headers.join(',')];
@@ -228,19 +234,15 @@ class ExportManager {
                 this.escapeCsvValue(item.id),
                 this.escapeCsvValue(item.category),
                 this.escapeCsvValue(item.subcategory),
-                this.escapeCsvValue(item.text),
-                this.escapeCsvValue(item.severity),
                 this.escapeCsvValue(item.waf),
+                this.escapeCsvValue(item.text),
                 this.escapeCsvValue(item.service),
-                this.escapeCsvValue(item.status)
+                this.escapeCsvValue(item.severity),
+                this.escapeCsvValue(item.status || 'Not Verified')
             ];
 
-            if (options.includeComments) {
-                row.push(
-                    this.escapeCsvValue(item.comment || ''),
-                    this.escapeCsvValue(item.reviewedAt || ''),
-                    this.escapeCsvValue(item.reviewedBy || '')
-                );
+            if (!options.templateFormat && options.includeComments) {
+                row.push(this.escapeCsvValue(item.comment || ''));
             }
 
             if (options.includeLinks) {
@@ -249,6 +251,11 @@ class ExportManager {
                     this.escapeCsvValue(item.training || '')
                 );
             }
+
+            row.push(
+                '',  // graph placeholder
+                this.escapeCsvValue(item.guid)
+            );
 
             csvRows.push(row.join(','));
         });
@@ -310,41 +317,37 @@ class ExportManager {
             // Create main assessment worksheet
             const worksheet = XLSX.utils.json_to_sheet(excelData.assessmentData);
             
-            // Set column widths for better readability
+            // Set column widths - Custom order
+            // Order: id, design area, sub area, waf pillar, checklist item, description, severity, status, comment, more info, training, graph, guid
             const columnWidths = [
-                { wch: 10 },  // ID
-                { wch: 30 },  // Category
-                { wch: 25 },  // Subcategory
-                { wch: 60 },  // Text
-                { wch: 12 },  // Severity
-                { wch: 15 },  // WAF
-                { wch: 15 },  // Service
+                { wch: 10 },  // id
+                { wch: 30 },  // design area
+                { wch: 25 },  // sub area
+                { wch: 15 },  // waf pillar
+                { wch: 60 },  // checklist item
+                { wch: 20 },  // description
+                { wch: 12 },  // severity
+                { wch: 15 }   // status (always included)
             ];
 
-            // Add status column if not in template format
-            if (!options.templateFormat) {
-                columnWidths.push({ wch: 15 }); // Status
+            // Add comments column for assessment format (not template)
+            if (!options.templateFormat && options.includeComments) {
+                columnWidths.push({ wch: 40 }); // comment
             }
 
-            if (options.includeComments && !options.templateFormat) {
-                columnWidths.push(
-                    { wch: 40 },  // Comment
-                    { wch: 15 },  // Reviewed At
-                    { wch: 15 }   // Reviewed By
-                );
-            }
-
+            // Add link and training columns if included
             if (options.includeLinks) {
                 columnWidths.push(
-                    { wch: 50 },  // Link
-                    { wch: 50 }   // Training
+                    { wch: 50 },  // more info
+                    { wch: 50 }   // training
                 );
             }
 
-            // Add GUID column for template format
-            if (options.templateFormat) {
-                columnWidths.splice(6, 0, { wch: 40 }); // Insert GUID column before Service
-            }
+            // Add graph and guid columns
+            columnWidths.push(
+                { wch: 10 },  // graph
+                { wch: 40 }   // guid
+            );
 
             worksheet['!cols'] = columnWidths;
 
@@ -375,54 +378,38 @@ class ExportManager {
     }
 
     /**
-     * Prepare data for Excel export
+     * Prepare data for Excel export - Custom column order
      */
     prepareExcelData(items, options) {
         const assessmentData = items.map(item => {
-            let excelItem;
+            // Column order: id, design area, sub area, waf pillar, checklist item, description, severity, status, comment, more info, training, graph, guid
+            const excelItem = {
+                'id': item.id || '',
+                'design area': item.category || '',
+                'sub area': item.subcategory || '',
+                'waf pillar': item.waf || '',
+                'checklist item': item.text || '',
+                'description': item.service || '',
+                'severity': item.severity || '',
+                'status': item.status || 'Not Verified'
+            };
 
-            if (options.templateFormat) {
-                // Template format - matches checklist.json structure
-                excelItem = {
-                    'Category': item.category,
-                    'Subcategory': item.subcategory,
-                    'Text': item.text,
-                    'WAF': item.waf,
-                    'Service': item.service,
-                    'GUID': item.guid,
-                    'ID': item.id,
-                    'Severity': item.severity
-                };
-
-                // Add links if available and option enabled
-                if (options.includeLinks) {
-                    if (item.training) excelItem['Training'] = item.training;
-                    if (item.link) excelItem['Link'] = item.link;
-                }
-            } else {
-                // Assessment format - includes status and assessment data
-                excelItem = {
-                    'ID': item.id,
-                    'Category': item.category,
-                    'Subcategory': item.subcategory,
-                    'Text': item.text,
-                    'Severity': item.severity,
-                    'WAF': item.waf,
-                    'Service': item.service,
-                    'Status': item.status
-                };
-
-                if (options.includeComments) {
-                    excelItem['Comment'] = item.comment || '';
-                    excelItem['Reviewed At'] = item.reviewedAt || '';
-                    excelItem['Reviewed By'] = item.reviewedBy || '';
-                }
-
-                if (options.includeLinks) {
-                    excelItem['More Info Link'] = item.link || '';
-                    excelItem['Training Link'] = item.training || '';
-                }
+            // Add comments for assessment format (not template)
+            if (!options.templateFormat && options.includeComments) {
+                excelItem['comment'] = item.comment || '';
             }
+
+            // Add link and training columns if included
+            if (options.includeLinks) {
+                excelItem['more info'] = item.link || '';
+                excelItem['training'] = item.training || '';
+            }
+
+            // Add graph column (placeholder)
+            excelItem['graph'] = '';
+            
+            // Add guid at the end
+            excelItem['guid'] = item.guid || '';
 
             return excelItem;
         });
@@ -1386,6 +1373,613 @@ class ExportManager {
 
         const blob = new Blob([htmlContent], { type: 'text/html' });
         this.downloadFile(blob, `alz-executive-summary-${this.getTimestamp()}.html`);
+    }
+
+    /**
+     * Export assessment as PowerPoint presentation
+     */
+    async exportPowerPoint(options) {
+        try {
+            // Check for PptxGenJS library - it can be available as PptxGenJS or pptxgen
+            const PptxGen = window.PptxGenJS || window.pptxgen || (typeof PptxGenJS !== 'undefined' ? PptxGenJS : null) || (typeof pptxgen !== 'undefined' ? pptxgen : null);
+            
+            if (!PptxGen) {
+                console.error('PptxGenJS library not found.');
+                console.log('Available global objects:', Object.keys(window).filter(k => k.toLowerCase().includes('pptx')));
+                this.showNotification('PowerPoint library not loaded. Please clear cache and refresh the page (Ctrl+Shift+R).', 'error');
+                return;
+            }
+
+            const stats = this.dataLoader.getStatistics();
+            const checklist = this.dataLoader.getCurrentChecklist();
+
+            // Validate data before proceeding
+            if (!checklist || !checklist.items || checklist.items.length === 0) {
+                this.showNotification('No assessment data available. Please load or upload an assessment first.', 'error');
+                return;
+            }
+
+            if (!stats || stats.total === 0) {
+                this.showNotification('No assessment statistics available. Please complete at least one assessment item.', 'error');
+                return;
+            }
+
+            this.showNotification('Generating PowerPoint presentation...', 'info');
+
+            const pptx = new PptxGen();
+
+            // Set presentation properties
+            pptx.author = 'Azure Assessment Tool';
+            pptx.company = 'Microsoft Azure';
+            pptx.title = 'Azure Landing Zone Assessment Report';
+            pptx.subject = 'Assessment Results';
+            
+            // Define colors matching Azure theme
+            const colors = {
+                primary: '0078D4',
+                success: '107C10',
+                danger: 'D13438',
+                warning: 'F7630C',
+                dark: '323130',
+                light: 'F8F9FA'
+            };
+
+            // Slide 1: Title Slide
+            const titleSlide = pptx.addSlide();
+            titleSlide.background = { color: colors.primary };
+            
+            titleSlide.addText('Azure Landing Zone', {
+                x: 1, y: 2, w: 8, h: 1,
+                fontSize: 44,
+                bold: true,
+                color: 'FFFFFF',
+                align: 'center'
+            });
+            titleSlide.addText('Assessment Report', {
+                x: 1, y: 3, w: 8, h: 0.8,
+                fontSize: 36,
+                color: 'FFFFFF',
+                align: 'center'
+            });
+            titleSlide.addText(new Date().toLocaleDateString(), {
+                x: 1, y: 5, w: 8, h: 0.5,
+                fontSize: 18,
+                color: 'FFFFFF',
+                align: 'center'
+            });
+
+            // Slide 2: Executive Summary
+            const summarySlide = pptx.addSlide();
+            summarySlide.addText('Executive Summary', {
+                x: 0.5, y: 0.3, w: 9, h: 0.6,
+                fontSize: 32,
+                bold: true,
+                color: colors.primary
+            });
+
+            const complianceScore = stats.total > 0 ? 
+                Math.round((stats.fulfilled / stats.total) * 100) : 0;
+            const reviewProgress = stats.total > 0 ? 
+                Math.round((stats.reviewed / stats.total) * 100) : 0;
+
+            summarySlide.addText([
+                { text: 'Overall Compliance Score: ', options: { fontSize: 18, color: colors.dark } },
+                { text: `${complianceScore}%`, options: { fontSize: 24, bold: true, color: colors.success } }
+            ], { x: 1, y: 1.2, w: 8, h: 0.5 });
+
+            summarySlide.addText([
+                { text: 'Assessment Progress: ', options: { fontSize: 18, color: colors.dark } },
+                { text: `${reviewProgress}%`, options: { fontSize: 24, bold: true, color: colors.primary } }
+            ], { x: 1, y: 1.8, w: 8, h: 0.5 });
+
+            // Add summary metrics table
+            const summaryRows = [
+                ['Metric', 'Count', 'Percentage'],
+                ['Total Items', String(stats.total || 0), '100%'],
+                ['Fulfilled', String(stats.fulfilled || 0), `${Math.round(((stats.fulfilled || 0) / (stats.total || 1)) * 100)}%`],
+                ['Open Issues', String(stats.open || 0), `${Math.round(((stats.open || 0) / (stats.total || 1)) * 100)}%`],
+                ['Not Required', String(stats.notRequired || 0), `${Math.round(((stats.notRequired || 0) / (stats.total || 1)) * 100)}%`],
+                ['Not Verified', String(stats.notVerified || 0), `${Math.round(((stats.notVerified || 0) / (stats.total || 1)) * 100)}%`]
+            ];
+
+            summarySlide.addTable(summaryRows, {
+                x: 1, y: 2.8, w: 8, h: 2.5,
+                fontSize: 14,
+                border: { pt: 1, color: colors.dark },
+                fill: { color: colors.light },
+                color: colors.dark,
+                colW: [3, 2.5, 2.5],
+                rowH: 0.4,
+                valign: 'middle',
+                align: 'center',
+                bold: true
+            });
+
+            // Slide 3: Category Breakdown
+            const categorySlide = pptx.addSlide();
+            categorySlide.addText('Category Status Breakdown', {
+                x: 0.5, y: 0.3, w: 9, h: 0.6,
+                fontSize: 32,
+                bold: true,
+                color: colors.primary
+            });
+
+            // Calculate category statistics
+            const categoryStats = this.calculateCategoryStats();
+            const categoryRows = [
+                ['Category', 'Not Verified', 'Open', 'Fulfilled', 'Total', 'Progress']
+            ];
+
+            Object.keys(categoryStats).sort().forEach(category => {
+                const stats = categoryStats[category];
+                const progress = (stats.total || 0) > 0 ? 
+                    Math.round((((stats.fulfilled || 0) + (stats.notRequired || 0)) / stats.total) * 100) : 0;
+                categoryRows.push([
+                    category,
+                    String(stats.notVerified || 0),
+                    String(stats.open || 0),
+                    String(stats.fulfilled || 0),
+                    String(stats.total || 0),
+                    `${progress}%`
+                ]);
+            });
+
+            categorySlide.addTable(categoryRows, {
+                x: 0.3, y: 1, w: 9.4, h: 4.5,
+                fontSize: 11,
+                border: { pt: 1, color: colors.dark },
+                fill: { color: colors.light },
+                color: colors.dark,
+                colW: [2.5, 1.5, 1.2, 1.5, 1.2, 1.5],
+                rowH: 0.35,
+                valign: 'middle',
+                align: 'center'
+            });
+
+            // Slide 4: Top Priority Recommendations (one high priority item per category)
+            const topRecommendations = this.getTopPriorityRecommendations(checklist);
+            if (topRecommendations.length > 0) {
+                const recoSlide = pptx.addSlide();
+                recoSlide.addText('🎯 Top Priority Recommendations', {
+                    x: 0.5, y: 0.3, w: 9, h: 0.6,
+                    fontSize: 32,
+                    bold: true,
+                    color: colors.danger
+                });
+
+                const recoRows = [
+                    ['Category', 'Critical Recommendation', 'Priority']
+                ];
+
+                topRecommendations.forEach(item => {
+                    recoRows.push([
+                        item.category || 'General',
+                        item.text.length > 70 ? item.text.substring(0, 67) + '...' : item.text,
+                        item.severity || 'High'
+                    ]);
+                });
+
+                recoSlide.addTable(recoRows, {
+                    x: 0.3, y: 1, w: 9.4, h: 4.8,
+                    fontSize: 10,
+                    border: { pt: 1, color: colors.danger },
+                    fill: { color: 'FFF5F5' },
+                    color: colors.dark,
+                    colW: [2, 6.2, 1.2],
+                    rowH: 0.6,
+                    valign: 'top',
+                    align: 'left'
+                });
+            }
+
+            // Slide 5: What's Going Well (fulfilled high-priority items)
+            const successItems = this.getWhatIsGoingWell(checklist);
+            if (successItems.length > 0) {
+                const successSlide = pptx.addSlide();
+                successSlide.addText('✅ What\'s Going Well', {
+                    x: 0.5, y: 0.3, w: 9, h: 0.6,
+                    fontSize: 32,
+                    bold: true,
+                    color: colors.success
+                });
+
+                successSlide.addText('Key Azure Landing Zone best practices successfully implemented:', {
+                    x: 0.5, y: 1, w: 9, h: 0.4,
+                    fontSize: 14,
+                    color: colors.dark,
+                    italic: true
+                });
+
+                let yPos = 1.6;
+                const itemsToShow = successItems.slice(0, 6); // Limit to 6 items
+                itemsToShow.forEach((item, index) => {
+                    successSlide.addText(`✓ ${item.text}`, {
+                        x: 1, y: yPos, w: 8.5, h: 0.6,
+                        fontSize: 13,
+                        color: colors.dark,
+                        bullet: false
+                    });
+                    yPos += 0.65;
+                });
+
+                if (successItems.length > 6) {
+                    successSlide.addText(`...and ${successItems.length - 6} more best practices implemented`, {
+                        x: 1, y: 5.5, w: 8, h: 0.3,
+                        fontSize: 12,
+                        italic: true,
+                        color: colors.success
+                    });
+                }
+            }
+
+            // Slide 6: Open Issues (if any)
+            if (stats.open > 0 && options.includeComments) {
+                const issuesSlide = pptx.addSlide();
+                issuesSlide.addText('Open Issues Requiring Attention', {
+                    x: 0.5, y: 0.3, w: 9, h: 0.6,
+                    fontSize: 32,
+                    bold: true,
+                    color: colors.danger
+                });
+
+                const openItems = checklist.items.filter(item => item.status === 'Open');
+                const topIssues = openItems.slice(0, 10); // Show top 10
+
+                const issueRows = [
+                    ['Category', 'Recommendation', 'Severity']
+                ];
+
+                topIssues.forEach(item => {
+                    issueRows.push([
+                        item.category || 'N/A',
+                        item.text.length > 60 ? item.text.substring(0, 57) + '...' : item.text,
+                        item.severity || 'Medium'
+                    ]);
+                });
+
+                issuesSlide.addTable(issueRows, {
+                    x: 0.3, y: 1, w: 9.4, h: 4.5,
+                    fontSize: 10,
+                    border: { pt: 1, color: colors.dark },
+                    fill: { color: colors.light },
+                    color: colors.dark,
+                    colW: [1.8, 6.2, 1.4],
+                    rowH: 0.4,
+                    valign: 'top',
+                    align: 'left'
+                });
+
+                if (openItems.length > 10) {
+                    issuesSlide.addText(`Showing 10 of ${openItems.length} open issues`, {
+                        x: 0.5, y: 5.8, w: 9, h: 0.3,
+                        fontSize: 12,
+                        italic: true,
+                        color: colors.dark
+                    });
+                }
+            }
+
+            // Slide 5: Compliance by Severity
+            const severitySlide = pptx.addSlide();
+            severitySlide.addText('Compliance by Severity', {
+                x: 0.5, y: 0.3, w: 9, h: 0.6,
+                fontSize: 32,
+                bold: true,
+                color: colors.primary
+            });
+
+            const severityStats = this.calculateSeverityStats();
+            const severityRows = [
+                ['Severity', 'Total', 'Fulfilled', 'Open', 'Compliance %']
+            ];
+
+            ['High', 'Medium', 'Low'].forEach(severity => {
+                if (severityStats[severity]) {
+                    const s = severityStats[severity];
+                    const compliance = (s.total || 0) > 0 ? Math.round(((s.fulfilled || 0) / s.total) * 100) : 0;
+                    severityRows.push([
+                        severity,
+                        String(s.total || 0),
+                        String(s.fulfilled || 0),
+                        String(s.open || 0),
+                        `${compliance}%`
+                    ]);
+                }
+            });
+
+            severitySlide.addTable(severityRows, {
+                x: 2, y: 1.5, w: 6, h: 2.5,
+                fontSize: 16,
+                border: { pt: 1, color: colors.dark },
+                fill: { color: colors.light },
+                color: colors.dark,
+                colW: [1.5, 1.1, 1.3, 1.1, 1],
+                rowH: 0.6,
+                valign: 'middle',
+                align: 'center',
+                bold: true
+            });
+
+            // Final Slide: Next Steps
+            const nextStepsSlide = pptx.addSlide();
+            nextStepsSlide.addText('📋 Next Steps', {
+                x: 0.5, y: 0.3, w: 9, h: 0.6,
+                fontSize: 32,
+                bold: true,
+                color: colors.primary
+            });
+
+            const recommendations = [
+                { text: 'Address all High severity open items as priority', icon: '⚠️' },
+                { text: 'Review and verify all "Not Verified" items', icon: '🔍' },
+                { text: 'Document remediation plans for open issues', icon: '📝' },
+                { text: 'Schedule regular compliance reviews', icon: '📅' },
+                { text: 'Implement continuous monitoring and automation', icon: '📊' },
+                { text: 'Maintain and expand successful practices', icon: '✅' }
+            ];
+
+            recommendations.forEach((rec, index) => {
+                nextStepsSlide.addText(`${rec.icon} ${rec.text}`, {
+                    x: 1, y: 1.3 + (index * 0.65), w: 8, h: 0.6,
+                    fontSize: 16,
+                    color: colors.dark,
+                    bullet: true
+                });
+            });
+
+            // Final Slide: Azure Landing Zone Documentation & Resources
+            const referencesSlide = pptx.addSlide();
+            referencesSlide.addText('📚 Azure Landing Zone Resources', {
+                x: 0.5, y: 0.3, w: 9, h: 0.6,
+                fontSize: 32,
+                bold: true,
+                color: colors.primary
+            });
+
+            // Key documentation links
+            const references = [
+                {
+                    title: 'Azure Landing Zone Documentation',
+                    url: 'aka.ms/alz',
+                    description: 'Official Microsoft documentation and implementation guidance'
+                },
+                {
+                    title: 'Azure Landing Zone Accelerator',
+                    url: 'aka.ms/alz/accelerator',
+                    description: 'Portal-based deployment experience'
+                },
+                {
+                    title: 'Well-Architected Framework',
+                    url: 'aka.ms/waf',
+                    description: 'Azure architecture best practices and design principles'
+                },
+                {
+                    title: 'Cloud Adoption Framework',
+                    url: 'aka.ms/caf',
+                    description: 'End-to-end cloud adoption guidance'
+                },
+                {
+                    title: 'Azure Review Checklists',
+                    url: 'github.com/Azure/review-checklists',
+                    description: 'Source repository for assessment checklists'
+                }
+            ];
+
+            let yPosition = 1.2;
+            references.forEach((ref, index) => {
+                // Title and URL
+                referencesSlide.addText([
+                    { text: `${index + 1}. ${ref.title}`, options: { fontSize: 14, bold: true, color: colors.dark } },
+                    { text: ` - ${ref.url}`, options: { fontSize: 12, color: colors.primary, hyperlink: { url: `https://${ref.url}` } } }
+                ], {
+                    x: 0.7, y: yPosition, w: 8.6, h: 0.35,
+                    valign: 'top'
+                });
+                
+                // Description
+                referencesSlide.addText(ref.description, {
+                    x: 1, y: yPosition + 0.35, w: 8.3, h: 0.25,
+                    fontSize: 11,
+                    color: '666666',
+                    italic: true
+                });
+                
+                yPosition += 0.75;
+            });
+
+            // Footer
+            referencesSlide.addText('For more information, visit Microsoft Learn and Azure Architecture Center', {
+                x: 0.5, y: 5.5, w: 9, h: 0.4,
+                fontSize: 11,
+                color: colors.dark,
+                align: 'center',
+                italic: true
+            });
+
+            // Save the presentation
+            const filename = `azure-alz-assessment-${this.getTimestamp()}.pptx`;
+            await pptx.writeFile({ fileName: filename });
+
+            this.showNotification(`PowerPoint presentation "${filename}" downloaded successfully!`, 'success');
+
+        } catch (error) {
+            console.error('Failed to generate PowerPoint:', error);
+            this.showNotification(`Failed to generate PowerPoint: ${error.message}`, 'error');
+        }
+    }
+
+    /**
+     * Calculate category statistics for PowerPoint
+     */
+    calculateCategoryStats() {
+        const checklist = this.dataLoader.getCurrentChecklist();
+        if (!checklist) return {};
+
+        const categoryStats = {};
+        
+        checklist.items.forEach(item => {
+            const category = item.category || 'Unknown';
+            
+            if (!categoryStats[category]) {
+                categoryStats[category] = {
+                    notVerified: 0,
+                    open: 0,
+                    fulfilled: 0,
+                    notRequired: 0,
+                    total: 0
+                };
+            }
+            
+            categoryStats[category].total++;
+            
+            const status = item.status || 'Not verified';
+            switch (status) {
+                case 'Not verified':
+                    categoryStats[category].notVerified++;
+                    break;
+                case 'Open':
+                    categoryStats[category].open++;
+                    break;
+                case 'Fulfilled':
+                    categoryStats[category].fulfilled++;
+                    break;
+                case 'Not required':
+                    categoryStats[category].notRequired++;
+                    break;
+            }
+        });
+
+        return categoryStats;
+    }
+
+    /**
+     * Calculate severity statistics for PowerPoint
+     */
+    calculateSeverityStats() {
+        const checklist = this.dataLoader.getCurrentChecklist();
+        if (!checklist) return {};
+
+        const severityStats = {};
+        
+        checklist.items.forEach(item => {
+            const severity = item.severity || 'Medium';
+            
+            if (!severityStats[severity]) {
+                severityStats[severity] = {
+                    total: 0,
+                    fulfilled: 0,
+                    open: 0,
+                    notRequired: 0,
+                    notVerified: 0
+                };
+            }
+            
+            severityStats[severity].total++;
+            
+            const status = item.status || 'Not verified';
+            switch (status) {
+                case 'Fulfilled':
+                    severityStats[severity].fulfilled++;
+                    break;
+                case 'Open':
+                    severityStats[severity].open++;
+                    break;
+                case 'Not required':
+                    severityStats[severity].notRequired++;
+                    break;
+                default:
+                    severityStats[severity].notVerified++;
+            }
+        });
+
+        return severityStats;
+    }
+
+    /**
+     * Get top priority recommendations - one high-priority open item per category
+     */
+    getTopPriorityRecommendations(checklist) {
+        if (!checklist || !checklist.items) return [];
+
+        const categoriesMap = new Map();
+        
+        // Find one high-priority open item per category
+        checklist.items.forEach(item => {
+            if (item.status === 'Open' && item.severity === 'High') {
+                const category = item.category || 'General';
+                if (!categoriesMap.has(category)) {
+                    categoriesMap.set(category, item);
+                }
+            }
+        });
+
+        // If not enough high priority items, add medium priority
+        if (categoriesMap.size < 5) {
+            checklist.items.forEach(item => {
+                if (item.status === 'Open' && item.severity === 'Medium') {
+                    const category = item.category || 'General';
+                    if (!categoriesMap.has(category) && categoriesMap.size < 10) {
+                        categoriesMap.set(category, item);
+                    }
+                }
+            });
+        }
+
+        return Array.from(categoriesMap.values());
+    }
+
+    /**
+     * Get what's going well - fulfilled high-priority items based on ALZ best practices
+     */
+    getWhatIsGoingWell(checklist) {
+        if (!checklist || !checklist.items) return [];
+
+        // Key ALZ best practices keywords to look for
+        const alzBestPractices = [
+            'hub and spoke', 'hub-and-spoke', 'network topology',
+            'privileged identity', 'pim', 'just-in-time',
+            'conditional access', 'mfa', 'multi-factor',
+            'private endpoint', 'private link', 'no public',
+            'tag', 'tagging', 'resource tag',
+            'budget', 'cost management', 'spending',
+            'infrastructure as code', 'iac', 'terraform', 'bicep',
+            'landing zone', 'subscription', 'management group',
+            'azure policy', 'policy assignment',
+            'monitoring', 'log analytics', 'diagnostic',
+            'backup', 'disaster recovery', 'bcdr',
+            'encryption', 'key vault', 'secrets',
+            'rbac', 'role-based', 'least privilege',
+            'ddos protection', 'firewall', 'nsg',
+            'blueprint', 'governance'
+        ];
+
+        const successItems = [];
+
+        // Find fulfilled high-priority items that match ALZ best practices
+        checklist.items.forEach(item => {
+            if (item.status === 'Fulfilled' && (item.severity === 'High' || item.severity === 'Medium')) {
+                const itemText = item.text.toLowerCase();
+                const itemCategory = (item.category || '').toLowerCase();
+                
+                // Check if item relates to key ALZ best practices
+                const isKeyPractice = alzBestPractices.some(practice => 
+                    itemText.includes(practice) || itemCategory.includes(practice)
+                );
+
+                if (isKeyPractice) {
+                    successItems.push(item);
+                }
+            }
+        });
+
+        // Sort by severity (High first) and limit to most important items
+        successItems.sort((a, b) => {
+            if (a.severity === 'High' && b.severity !== 'High') return -1;
+            if (a.severity !== 'High' && b.severity === 'High') return 1;
+            return 0;
+        });
+
+        return successItems.slice(0, 12); // Return top 12 items
     }
 }
 

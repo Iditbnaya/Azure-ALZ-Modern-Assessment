@@ -1,0 +1,537 @@
+{
+    "categories": [
+        {
+            "name": "ネットワーク トポロジと接続性"
+        }
+    ],
+    "items": [
+        {
+            "category": "ネットワーク トポロジと接続性",
+            "guid": "b71ca41b-3a80-48f3-a6cd-22cdf197c1cf",
+            "id": "A01.02",
+            "link": "https://learn.microsoft.com/azure/cloud-adoption-framework/ready/landing-zone/design-area/resource-org-management-groups#management-groups-in-the-azure-landing-zone-accelerator",
+            "severity": "中程度",
+            "subcategory": "アプリの配信",
+            "text": "ランディング ゾーン内で、内部向けアプリ (corp) と外部向けアプリ (online) の両方のアプリ配信を実行します。",
+            "training": "https://learn.microsoft.com/learn/paths/secure-application-delivery/",
+            "waf": "安全"
+        },
+        {
+            "category": "ネットワーク トポロジと接続性",
+            "graph": "resources | where type == 'microsoft.network/applicationgateways' | project id, compliant = properties.sku.name in ('Standard_v2', 'WAF_v2') | project id,compliant",
+            "guid": "553585a6-abe0-11ed-afa1-0242ac120002",
+            "id": "A01.03",
+            "link": "https://learn.microsoft.com/azure/application-gateway/overview-v2",
+            "service": "App Gateway",
+            "severity": "中程度",
+            "subcategory": "アプリケーション・ゲートウェイ",
+            "text": "Application Gateway v2 SKU を使用していることを確認する",
+            "training": "https://learn.microsoft.com/learn/paths/secure-application-delivery/",
+            "waf": "安全"
+        },
+        {
+            "category": "ネットワーク トポロジと接続性",
+            "graph": "resources | where type == 'microsoft.network/loadbalancers' | project id, compliant=(tolower(sku.name) == 'standard')",
+            "guid": "4e35fbf5-0ae2-48b2-97ce-753353edbd1a",
+            "id": "A01.04",
+            "link": "https://learn.microsoft.com/azure/load-balancer/load-balancer-overview",
+            "service": "Load Balancer",
+            "severity": "中程度",
+            "subcategory": "ロードバランサー",
+            "text": "Azure Load Balancers に Standard SKU を使用していることを確認します",
+            "waf": "安全"
+        },
+        {
+            "category": "ネットワーク トポロジと接続性",
+            "guid": "9432621a-8397-4654-a882-5bc856b7ef83",
+            "id": "A01.05",
+            "link": "https://learn.microsoft.com/azure/load-balancer/load-balancer-standard-availability-zones",
+            "service": "Load Balancer",
+            "severity": "中程度",
+            "subcategory": "ロードバランサー",
+            "text": "Load Balancer フロントエンドの IP アドレスがゾーン冗長であることを確認します (ゾーン フロントエンドが必要な場合を除く)。",
+            "waf": "安全"
+        },
+        {
+            "category": "ネットワーク トポロジと接続性",
+            "graph": "resources | where type=='microsoft.network/applicationgateways' | extend subnetId = tostring(properties.gatewayIPConfigurations[0].properties.subnet.id) | project id, subnetId | join (resources | where type=='microsoft.network/virtualnetworks' | project id,subnets=properties.subnets | mv-expand subnets | mv-expand subnets.properties.addressPrefixes | project id, subnetId = tostring(subnets.id), prefix1 = subnets.properties.addressPrefix, prefix2 = subnets.properties.addressPrefixes | mv-expand prefix2 | extend prefix = iff(isnotnull(prefix1), prefix1, prefix2) | extend subnetPrefixLength = split(prefix, '/')[1])on subnetId | extend compliant = (subnetPrefixLength <= 24 or subnetPrefixLength == 64) | distinct id,compliant",
+            "guid": "dfc50f87-3800-424c-937b-ed5f186e7c15",
+            "id": "A01.06",
+            "link": "https://learn.microsoft.com/azure/application-gateway/configuration-infrastructure#size-of-the-subnet",
+            "service": "App Gateway",
+            "severity": "中程度",
+            "subcategory": "アプリケーション・ゲートウェイ",
+            "text": "Application Gateways v2 は、IP プレフィックスが /24 以上のサブネットにデプロイする必要があります",
+            "training": "https://learn.microsoft.com/learn/paths/secure-application-delivery/",
+            "waf": "安全"
+        },
+        {
+            "category": "ネットワーク トポロジと接続性",
+            "description": "リバースプロキシの管理全般、特にWAFの管理は、ネットワーキングよりもアプリケーションに近いため、アプリと同じサブスクリプションに属します。Application Gateway と WAF を接続サブスクリプションに一元化することは、1 つのチームによって管理されている場合は問題ない可能性があります。",
+            "guid": "48b662d6-d15f-4512-a654-98f6dfe237de",
+            "id": "A01.07",
+            "link": "https://learn.microsoft.com/azure/web-application-firewall/ag/ag-overview",
+            "service": "App Gateway",
+            "severity": "中程度",
+            "subcategory": "アプリケーション・ゲートウェイ",
+            "text": "ランディング ゾーン仮想ネットワーク内の受信 HTTP(S) 接続のプロキシに使用される Azure Application Gateway v2 またはパートナー NVA と、それらがセキュリティ保護しているアプリをデプロイします。",
+            "training": "https://learn.microsoft.com/learn/paths/secure-application-delivery/",
+            "waf": "安全"
+        },
+        {
+            "category": "ネットワーク トポロジと接続性",
+            "guid": "f109e1f3-c79b-4f14-82de-6b5c22314d08",
+            "id": "A01.08",
+            "link": "https://learn.microsoft.com/azure/web-application-firewall/ag/ag-overview",
+            "service": "App Gateway",
+            "severity": "中程度",
+            "subcategory": "アプリケーション・ゲートウェイ",
+            "text": "アプリケーション ランディング ゾーン内のすべてのパブリック IP アドレスに対して、DDoS ネットワークまたは IP 保護プランを使用します。",
+            "training": "https://learn.microsoft.com/learn/paths/secure-networking-infrastructure/",
+            "waf": "安全"
+        },
+        {
+            "category": "ネットワーク トポロジと接続性",
+            "graph": "resources | where type =~ 'microsoft.network/applicationGateways' | extend compliant = (isnotnull(properties.autoscaleConfiguration) and properties.autoscaleConfiguration.minCapacity >= 2) | distinct id,compliant",
+            "guid": "135bf4ac-f9db-461f-b76b-2ee9e30b12c0",
+            "id": "A01.09",
+            "link": "https://learn.microsoft.com/azure/application-gateway/application-gateway-autoscaling-zone-redundant",
+            "service": "App Gateway",
+            "severity": "中程度",
+            "subcategory": "アプリケーション・ゲートウェイ",
+            "text": "自動スケールは、最小インスタンス数が 2 になるように構成します。",
+            "training": "https://learn.microsoft.com/learn/paths/secure-application-delivery/",
+            "waf": "確実"
+        },
+        {
+            "category": "ネットワーク トポロジと接続性",
+            "graph": "resources | where type =~ 'microsoft.network/applicationGateways' | extend compliant = (isnotnull(zones) and array_length(zones) > 1) | distinct id,compliant",
+            "guid": "060c6964-52b5-48db-af8b-83e4b2d85349",
+            "id": "A01.10",
+            "link": "https://learn.microsoft.com/azure/reliability/migrate-app-gateway-v2",
+            "service": "App Gateway",
+            "severity": "中程度",
+            "subcategory": "アプリケーション・ゲートウェイ",
+            "text": "Application Gateway を複数の可用性ゾーンにデプロイする",
+            "training": "https://learn.microsoft.com/learn/paths/secure-application-delivery/",
+            "waf": "確実"
+        },
+        {
+            "category": "ネットワーク トポロジと接続性",
+            "guid": "3f29812b-2363-4cef-b179-b599de0d5973",
+            "id": "A01.12",
+            "link": "https://learn.microsoft.com/azure/ddos-protection/ddos-protection-overview",
+            "service": "Front Door",
+            "severity": "中程度",
+            "subcategory": "アプリの配信",
+            "text": "Front Door と Application Gateway を使用して HTTP/S アプリを保護する場合は、Front Door で WAF ポリシーを使用します。Application Gateway をロックダウンして、Front Door からのトラフィックのみを受信します。",
+            "training": "https://learn.microsoft.com/learn/paths/secure-networking-infrastructure/",
+            "waf": "安全"
+        },
+        {
+            "ammp": true,
+            "category": "ネットワーク トポロジと接続性",
+            "guid": "cd4cd21b-0881-437f-9e6c-4cfd3e504547",
+            "id": "A01.13",
+            "link": "https://learn.microsoft.com/azure/web-application-firewall/ag/ag-overview",
+            "service": "Traffic Manager",
+            "severity": "高い",
+            "subcategory": "トラフィック マネージャー",
+            "text": "Traffic Manager を使用して、HTTP/S 以外のプロトコルにまたがるグローバル アプリを配信します。",
+            "training": "https://learn.microsoft.com/learn/paths/secure-networking-infrastructure/",
+            "waf": "確実"
+        },
+        {
+            "category": "ネットワーク トポロジと接続性",
+            "guid": "3b4b3e88-a459-4ed5-a22f-644dfbc58204",
+            "id": "A01.14",
+            "link": "https://learn.microsoft.com/azure/active-directory/app-proxy/application-proxy#how-application-proxy-works",
+            "service": "Entra",
+            "severity": "低い",
+            "subcategory": "アプリの配信",
+            "text": "ユーザーが内部アプリケーションへのアクセスのみを必要とする場合、Microsoft Entra ID アプリケーション プロキシは Azure Virtual Desktop (AVD) の代替手段として検討されていますか?",
+            "training": "https://learn.microsoft.com/learn/modules/configure-azure-ad-application-proxy/",
+            "waf": "安全"
+        },
+        {
+            "category": "ネットワーク トポロジと接続性",
+            "guid": "01ca7cf1-5754-442d-babb-8ba6772e5c30",
+            "id": "A01.15",
+            "link": "https://learn.microsoft.com/azure/active-directory/app-proxy/application-proxy#how-application-proxy-works",
+            "service": "Entra",
+            "severity": "中程度",
+            "subcategory": "アプリの配信",
+            "text": "ネットワーク内の着信接続用に開かれるファイアウォール ポートの数を減らすには、Microsoft Entra ID アプリケーション プロキシを使用して、リモート ユーザーに内部アプリケーションへの安全で認証されたアクセスを提供することを検討してください。",
+            "training": "https://learn.microsoft.com/learn/paths/implement-applications-external-access-azure-ad/",
+            "waf": "安全"
+        },
+        {
+            "ammp": true,
+            "category": "ネットワーク トポロジと接続性",
+            "graph": "resources | where type=='microsoft.network/loadbalancers' | extend countOutRules=array_length(properties.outboundRules) | extend compliant = (countOutRules == 0) | distinct id,compliant",
+            "guid": "97a2fd46-64b0-1dfa-b72d-9c8869496d75",
+            "id": "A01.22",
+            "link": "https://learn.microsoft.com/azure/nat-gateway/nat-overview#outbound-connectivity",
+            "service": "Load Balancer",
+            "severity": "高い",
+            "subcategory": "ロードバランサー",
+            "text": "Load Balancer のアウトバウンド規則の代わりに Azure NAT Gateway を使用して SNAT のスケーラビリティを向上させる",
+            "waf": "確実"
+        },
+        {
+            "ammp": true,
+            "category": "ネットワーク トポロジと接続性",
+            "graph": "resources | where type == 'microsoft.network/applicationgatewaywebapplicationfirewallpolicies' | mv-expand properties.managedRules.managedRuleSets | project id, rulesettype = properties_managedRules_managedRuleSets.ruleSetType | extend compliant1 = (rulesettype == 'Microsoft_BotManagerRuleSet') | project id, compliant1 | summarize compliant = max(compliant1) by id",
+            "guid": "2f8e81eb-8e68-4026-8b1f-70f9b05f7cf9",
+            "id": "A01.37",
+            "link": "https://learn.microsoft.com/azure/web-application-firewall/ag/bot-protection",
+            "service": "App Gateway",
+            "severity": "高い",
+            "subcategory": "アプリケーション・ゲートウェイ",
+            "text": "Azure Application Gateway WAF ボット保護ルール セットを有効にします。ボット ルールは、良いボットと悪いボットを検出します。",
+            "waf": "安全"
+        },
+        {
+            "ammp": true,
+            "category": "ネットワーク トポロジと接続性",
+            "guid": "8ea8e0d4-84e8-4b33-aeab-493f6391b4d6",
+            "id": "A01.38",
+            "link": "https://learn.microsoft.com/azure/web-application-firewall/ag/application-gateway-waf-request-size-limits#request-body-inspection",
+            "service": "App Gateway",
+            "severity": "高い",
+            "subcategory": "アプリケーション・ゲートウェイ",
+            "text": "Azure Application Gateway WAF ポリシーで要求本文の検査機能が有効になっているかどうかを確認します。",
+            "waf": "安全"
+        },
+        {
+            "ammp": true,
+            "category": "ネットワーク トポロジと接続性",
+            "guid": "a4dd86d3-5ffa-408c-b660-cce073d085b8",
+            "id": "A01.39",
+            "link": "https://learn.microsoft.com/azure/web-application-firewall/ag/best-practices#tune-your-waf",
+            "service": "App Gateway",
+            "severity": "高い",
+            "subcategory": "アプリケーション・ゲートウェイ",
+            "text": "ワークロードの検出モードで Azure Application Gateway WAF を調整します。誤検出を減らします。",
+            "waf": "安全"
+        },
+        {
+            "ammp": true,
+            "category": "ネットワーク トポロジと接続性",
+            "guid": "baf8e317-2397-4d49-b3d1-0dcc16d8778d",
+            "id": "A01.40",
+            "link": "https://learn.microsoft.com/azure/web-application-firewall/ag/policy-overview?source=recommendations",
+            "service": "App Gateway",
+            "severity": "高い",
+            "subcategory": "アプリケーション・ゲートウェイ",
+            "text": "Application Gateway の WAF ポリシーを \"防止\" モードでデプロイします。",
+            "waf": "安全"
+        },
+        {
+            "category": "ネットワーク トポロジと接続性",
+            "guid": "43fae595-8a32-4299-a69e-0f32c454dcc9",
+            "id": "A01.41",
+            "link": "https://learn.microsoft.com/azure/web-application-firewall/ag/rate-limiting-overview",
+            "service": "App Gateway",
+            "severity": "中程度",
+            "subcategory": "アプリケーション・ゲートウェイ",
+            "text": "Azure Application Gateway WAF にレート制限を追加します。レート制限は、クライアントが誤ってまたは意図的に短時間に大量のトラフィックを送信するのをブロックします。",
+            "waf": "安全"
+        },
+        {
+            "category": "ネットワーク トポロジと接続性",
+            "guid": "041e0ad8-7b12-4694-a0b7-a0e25ee2470f",
+            "id": "A01.42",
+            "link": "https://learn.microsoft.com/azure/web-application-firewall/ag/rate-limiting-overview#rate-limiting-details",
+            "service": "App Gateway",
+            "severity": "中程度",
+            "subcategory": "アプリケーション・ゲートウェイ",
+            "text": "Azure Application Gateway WAF のレート制限には高いしきい値を使用します。レート制限のしきい値を高くすると、正当なトラフィックのブロックを回避しながら、インフラストラクチャを圧倒する可能性のある非常に多くのリクエストに対する保護を提供します。",
+            "waf": "安全"
+        },
+        {
+            "category": "ネットワーク トポロジと接続性",
+            "guid": "99937189-ff78-492a-b9ca-18d828d82b37",
+            "id": "A01.43",
+            "link": "https://learn.microsoft.com/azure/web-application-firewall/ag/best-practices#geo-filtering-best-practices",
+            "service": "App Gateway",
+            "severity": "低い",
+            "subcategory": "アプリケーション・ゲートウェイ",
+            "text": "すべての地理的地域からのトラフィックを想定していない場合は、geo フィルタを使用して、想定外の国からのトラフィックをブロックします。",
+            "waf": "安全"
+        },
+        {
+            "category": "ネットワーク トポロジと接続性",
+            "guid": "349a15c1-52f4-4319-9078-3895d95ecafd",
+            "id": "A01.44",
+            "link": "https://learn.microsoft.com/azure/web-application-firewall/ag/geomatch-custom-rules",
+            "service": "App Gateway",
+            "severity": "中程度",
+            "subcategory": "アプリケーション・ゲートウェイ",
+            "text": "Azure Application Gateway WAF を使用してトラフィックを geo フィルタリングする場合は、不明な (ZZ) 場所を指定します。IP アドレスを地理的に一致できない場合に、正当な要求を誤ってブロックしないようにします。",
+            "waf": "安全"
+        },
+        {
+            "category": "ネットワーク トポロジと接続性",
+            "guid": "6c19dfd5-a61c-436c-9001-491b9b3d0228",
+            "id": "A01.45",
+            "link": "https://learn.microsoft.com/azure/web-application-firewall/ag/best-practices#use-the-latest-ruleset-versions",
+            "service": "App Gateway",
+            "severity": "中程度",
+            "subcategory": "アプリケーション・ゲートウェイ",
+            "text": "最新の Azure Application Gateway WAF ルール セット バージョンを使用します。ルールセットの更新は、現在の脅威の状況を考慮して定期的に更新されます。",
+            "waf": "安全"
+        },
+        {
+            "category": "ネットワーク トポロジと接続性",
+            "guid": "f84106a2-2e9e-42ac-add6-d3416ecfed53",
+            "id": "A01.46",
+            "link": "https://learn.microsoft.com/azure/web-application-firewall/ag/best-practices#add-diagnostic-settings-to-save-your-wafs-logs",
+            "service": "App Gateway",
+            "severity": "中程度",
+            "subcategory": "アプリケーション・ゲートウェイ",
+            "text": "診断設定を追加して、Azure Application Gateway WAF ログを保存します。",
+            "waf": "オペレーションズ"
+        },
+        {
+            "category": "ネットワーク トポロジと接続性",
+            "guid": "92664c60-47e3-4591-8b1b-8d557656e686",
+            "id": "A01.48",
+            "link": "https://learn.microsoft.com/azure/web-application-firewall/ag/best-practices#send-logs-to-microsoft-sentinel",
+            "service": "App Gateway",
+            "severity": "中程度",
+            "subcategory": "アプリケーション・ゲートウェイ",
+            "text": "Azure Application Gateway WAF ログを Microsoft Sentinel に送信します。",
+            "waf": "オペレーションズ"
+        },
+        {
+            "category": "ネットワーク トポロジと接続性",
+            "guid": "ba0e9b26-6e0d-4ec8-8541-023c00afd5b7",
+            "id": "A01.50",
+            "link": "https://learn.microsoft.com/azure/web-application-firewall/ag/best-practices#define-your-waf-configuration-as-code",
+            "service": "App Gateway",
+            "severity": "中程度",
+            "subcategory": "アプリケーション・ゲートウェイ",
+            "text": "Azure Application Gateway WAF 構成をコードとして定義します。コードを使用すると、新しいルール セット バージョンをより簡単に採用し、追加の保護を得ることができます。",
+            "waf": "オペレーションズ"
+        },
+        {
+            "category": "ネットワーク トポロジと接続性",
+            "guid": "f17ec301-8470-4afd-aabc-c1fdfe47dcc0",
+            "id": "A01.51",
+            "link": "https://learn.microsoft.com/azure/web-application-firewall/ag/policy-overview",
+            "service": "App Gateway",
+            "severity": "中程度",
+            "subcategory": "アプリケーション・ゲートウェイ",
+            "text": "従来のWAF構成のかわりにWAFポリシーを使用します。",
+            "waf": "オペレーションズ"
+        },
+        {
+            "category": "ネットワーク トポロジと接続性",
+            "guid": "d4eb8667-f8cb-4cdd-94e6-2f967ba98f88",
+            "id": "A01.52",
+            "link": "https://learn.microsoft.com/azure/virtual-wan/scenario-secured-hub-app-gateway",
+            "service": "App Gateway",
+            "severity": "中程度",
+            "subcategory": "アプリケーション・ゲートウェイ",
+            "text": "バックエンドの受信トラフィックをフィルター処理して、Application Gateway サブネット (NSG など) からの接続のみを受け入れるようにします。",
+            "waf": "安全"
+        },
+        {
+            "category": "ネットワーク トポロジと接続性",
+            "guid": "a66f0fd8-2ca4-422e-8df3-235148127ca2",
+            "id": "A01.54",
+            "link": "https://learn.microsoft.com/azure/application-gateway/ssl-overview",
+            "service": "App Gateway",
+            "severity": "高い",
+            "subcategory": "アプリケーション・ゲートウェイ",
+            "text": "バックエンド サーバーへのトラフィックを暗号化する必要があります。",
+            "waf": "安全"
+        },
+        {
+            "category": "ネットワーク トポロジと接続性",
+            "guid": "3dba65cb-834d-44d8-a3ca-a6aa2f1587be",
+            "id": "A01.55",
+            "link": "https://learn.microsoft.com/azure/web-application-firewall/overview",
+            "service": "App Gateway",
+            "severity": "高い",
+            "subcategory": "アプリケーション・ゲートウェイ",
+            "text": "Web アプリケーション ファイアウォールを使用する必要があります。",
+            "waf": "安全"
+        },
+        {
+            "category": "ネットワーク トポロジと接続性",
+            "guid": "0158fcb6-0bc1-4687-832f-cc7c359c22d2",
+            "id": "A01.56",
+            "link": "https://learn.microsoft.com/azure/application-gateway/redirect-overview",
+            "service": "App Gateway",
+            "severity": "中程度",
+            "subcategory": "アプリケーション・ゲートウェイ",
+            "text": "HTTP を HTTPS にリダイレクトする",
+            "waf": "安全"
+        },
+        {
+            "category": "ネットワーク トポロジと接続性",
+            "guid": "bb697864-1b4c-43af-8667-90cc69aaed5f",
+            "id": "A01.57",
+            "link": "https://learn.microsoft.com/azure/application-gateway/how-application-gateway-works#modifications-to-the-request",
+            "service": "App Gateway",
+            "severity": "中程度",
+            "subcategory": "アプリケーション・ゲートウェイ",
+            "text": "ゲートウェイで管理される Cookie を使用して、ユーザーセッションからのトラフィックを同じサーバーに転送して処理する",
+            "waf": "オペレーションズ"
+        },
+        {
+            "category": "ネットワーク トポロジと接続性",
+            "guid": "ff353ad8-15fb-4ae8-9fc5-a85a36d36a35",
+            "id": "A01.58",
+            "link": "https://learn.microsoft.com/azure/application-gateway/configuration-http-settings",
+            "service": "App Gateway",
+            "severity": "高い",
+            "subcategory": "アプリケーション・ゲートウェイ",
+            "text": "計画されたサービス更新中に接続ドレインを有効にして、バックエンド プールの既存のメンバーへの接続が失われないようにします",
+            "waf": "安全"
+        },
+        {
+            "category": "ネットワーク トポロジと接続性",
+            "guid": "c8741f03-45a4-4183-a6b8-139e0773b8b5",
+            "id": "A01.59",
+            "link": "https://learn.microsoft.com/azure/application-gateway/custom-error",
+            "service": "App Gateway",
+            "severity": "低い",
+            "subcategory": "アプリケーション・ゲートウェイ",
+            "text": "カスタムエラーページを作成して、パーソナライズされたユーザーエクスペリエンスを表示する",
+            "waf": "オペレーションズ"
+        },
+        {
+            "category": "ネットワーク トポロジと接続性",
+            "guid": "f850d46f-f5d7-4b17-b48c-a780741402e1",
+            "id": "A01.60",
+            "link": "https://learn.microsoft.com/azure/application-gateway/rewrite-http-headers-url",
+            "service": "App Gateway",
+            "severity": "中程度",
+            "subcategory": "アプリケーション・ゲートウェイ",
+            "text": "HTTP 要求と応答ヘッダーを編集して、クライアントとサーバー間のルーティングと情報交換を容易にします",
+            "waf": "安全"
+        },
+        {
+            "category": "ネットワーク トポロジと接続性",
+            "guid": "eadc3164-4a0f-461c-85f1-1a372c04dfd1",
+            "id": "A01.61",
+            "link": "https://learn.microsoft.com/azure/frontdoor/front-door-overview",
+            "service": "App Gateway",
+            "severity": "中程度",
+            "subcategory": "アプリケーション・ゲートウェイ",
+            "text": "Front Door を構成して、グローバル Web トラフィックのルーティングと最上位のエンドユーザーのパフォーマンス、および迅速なグローバル フェイルオーバーによる信頼性を最適化する",
+            "waf": "パフォーマンス"
+        },
+        {
+            "category": "ネットワーク トポロジと接続性",
+            "guid": "29dcc19f-a8fa-4c35-8281-290577538793",
+            "id": "A01.62",
+            "link": "https://learn.microsoft.com/azure/load-balancer/load-balancer-overview",
+            "service": "App Gateway",
+            "severity": "中程度",
+            "subcategory": "アプリケーション・ゲートウェイ",
+            "text": "トランスポート層の負荷分散を使用する",
+            "waf": "パフォーマンス"
+        },
+        {
+            "category": "ネットワーク トポロジと接続性",
+            "guid": "276898c1-af5e-4819-9e8e-049c7801ab9d",
+            "id": "A01.63",
+            "link": "https://learn.microsoft.com/azure/application-gateway/multiple-site-overview",
+            "service": "App Gateway",
+            "severity": "中程度",
+            "subcategory": "アプリケーション・ゲートウェイ",
+            "text": "1 つのゲートウェイ上の複数の Web アプリケーションのホスト名またはドメイン名に基づいてルーティングを構成する",
+            "waf": "安全"
+        },
+        {
+            "category": "ネットワーク トポロジと接続性",
+            "guid": "5fe365b6-58e8-47ed-a8cf-5163850380a2",
+            "id": "A01.64",
+            "link": "https://learn.microsoft.com/azure/application-gateway/create-ssl-portal",
+            "service": "App Gateway",
+            "severity": "中程度",
+            "subcategory": "アプリケーション・ゲートウェイ",
+            "text": "SSL証明書管理を一元化して、バックエンドサーバーファームからの暗号化と復号化のオーバーヘッドを削減します",
+            "waf": "安全"
+        },
+        {
+            "category": "ネットワーク トポロジと接続性",
+            "guid": "fa64b4dd-35c2-4047-ac5c-45dfbf8b0db9",
+            "id": "A01.65",
+            "link": "https://learn.microsoft.com/azure/application-gateway/application-gateway-websocket",
+            "service": "App Gateway",
+            "severity": "低い",
+            "subcategory": "アプリケーション・ゲートウェイ",
+            "text": "Application Gateway を使用して WebSocket プロトコルと HTTP/2 プロトコルをネイティブにサポートする",
+            "waf": "安全"
+        }
+    ],
+    "metadata": {
+        "name": "Azure Application Delivery Networking",
+        "state": "GA",
+        "timestamp": "September 23, 2024",
+        "waf": "all"
+    },
+    "severities": [
+        {
+            "name": "高い"
+        },
+        {
+            "name": "中程度"
+        },
+        {
+            "name": "低い"
+        }
+    ],
+    "status": [
+        {
+            "description": "このチェックはまだ見ていません",
+            "name": "未確認"
+        },
+        {
+            "description": "このチェックにはアクションアイテムが関連付けられています",
+            "name": "開ける"
+        },
+        {
+            "description": "このチェックは検証済みであり、これ以上のアクション アイテムは関連付けられていません",
+            "name": "達成"
+        },
+        {
+            "description": "推奨事項は理解されているが、現在の要件では必要ではない",
+            "name": "必須ではありません"
+        },
+        {
+            "description": "現在のデザインには適用されません",
+            "name": "該当なし"
+        }
+    ],
+    "waf": [
+        {
+            "name": "確実"
+        },
+        {
+            "name": "安全"
+        },
+        {
+            "name": "費用"
+        },
+        {
+            "name": "オペレーションズ"
+        },
+        {
+            "name": "パフォーマンス"
+        }
+    ],
+    "yesno": [
+        {
+            "name": "はい"
+        },
+        {
+            "name": "いいえ"
+        }
+    ]
+}

@@ -12,8 +12,55 @@ class ALZAssessmentApp {
         
         this.currentView = 'welcome';
         this.isLoading = false;
+        this.diagnosticLogs = [];
         
+        this.setupDiagnosticLogging();
         this.initialize();
+    }
+
+    /**
+     * Setup diagnostic logging to capture console output
+     */
+    setupDiagnosticLogging() {
+        const originalConsoleLog = console.log;
+        const originalConsoleError = console.error;
+        const originalConsoleWarn = console.warn;
+        
+        const addToDiagnostic = (level, ...args) => {
+            const timestamp = new Date().toLocaleTimeString();
+            const message = args.map(arg => 
+                typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+            ).join(' ');
+            
+            this.diagnosticLogs.push(`[${timestamp}] ${level}: ${message}`);
+            
+            // Keep only last 100 logs
+            if (this.diagnosticLogs.length > 100) {
+                this.diagnosticLogs.shift();
+            }
+            
+            // Update diagnostic panel if visible
+            const diagnosticContent = document.getElementById('diagnosticContent');
+            if (diagnosticContent && diagnosticContent.parentElement.style.display !== 'none') {
+                diagnosticContent.textContent = this.diagnosticLogs.join('\n');
+                diagnosticContent.scrollTop = diagnosticContent.scrollHeight;
+            }
+        };
+        
+        console.log = (...args) => {
+            originalConsoleLog.apply(console, args);
+            addToDiagnostic('INFO', ...args);
+        };
+        
+        console.error = (...args) => {
+            originalConsoleError.apply(console, args);
+            addToDiagnostic('ERROR', ...args);
+        };
+        
+        console.warn = (...args) => {
+            originalConsoleWarn.apply(console, args);
+            addToDiagnostic('WARN', ...args);
+        };
     }
 
     /**
@@ -38,6 +85,19 @@ class ALZAssessmentApp {
      * Setup main application event listeners
      */
     setupEventListeners() {
+        // Language selector
+        const languageSelector = document.getElementById('languageSelector');
+        if (languageSelector) {
+            // Set to saved language
+            languageSelector.value = this.dataLoader.getLanguage();
+            
+            languageSelector.addEventListener('change', (event) => {
+                const selectedLanguage = event.target.value;
+                this.dataLoader.setLanguage(selectedLanguage);
+                this.showNotification(`Language changed to ${this.dataLoader.availableLanguages[selectedLanguage]}. Please reload the assessment.`, 'info');
+            });
+        }
+
         // Load checklist button
         const loadButton = document.getElementById('loadChecklist');
         if (loadButton) {
@@ -119,10 +179,13 @@ class ALZAssessmentApp {
             return;
         }
 
+        const currentLang = this.dataLoader.getLanguage();
+        const langName = this.dataLoader.availableLanguages[currentLang];
+        
         try {
             this.setLoadingState(true);
             
-            console.log(`Loading checklist: ${checklistType}`);
+            console.log(`Loading checklist: ${checklistType} (${langName})`);
             
             // Load the checklist data
             await this.dataLoader.loadChecklist(checklistType);
@@ -136,11 +199,17 @@ class ALZAssessmentApp {
             // Try to restore previous progress
             this.tryRestoreProgress();
             
-            this.showNotification('Assessment loaded successfully!', 'success');
+            this.showNotification(`Assessment loaded successfully! (Language: ${langName})`, 'success');
             
         } catch (error) {
             console.error('Failed to load checklist:', error);
-            this.showNotification(`Failed to load assessment: ${error.message}`, 'error');
+            
+            // If the specific language file is not found, fallback to English
+            if (error.message.includes('404') && currentLang !== 'en') {
+                this.showNotification(`${langName} version not available for this checklist. Try English or another language.`, 'warning');
+            } else {
+                this.showNotification(`Failed to load assessment: ${error.message}`, 'error');
+            }
         } finally {
             this.setLoadingState(false);
         }
@@ -500,27 +569,34 @@ class ALZAssessmentApp {
         }
 
         try {
-            const currentDate = new Date().toISOString().split('T')[0];
-            const checklistType = document.getElementById('checklistSelector')?.value || 'assessment';
-            const filename = `${checklistType}_assessment_${currentDate}`;
+            // Prepare export options
+            const options = {
+                includeComments: true,
+                includeLinks: true,
+                includeOnlyReviewed: false,
+                templateFormat: false
+            };
+
+            console.log(`💾 Saving assessment as ${format.toUpperCase()}...`);
 
             switch (format) {
                 case 'json':
-                    this.exportManager.exportToJSON(filename);
+                    this.exportManager.exportJSON(options);
                     break;
                 case 'excel':
-                    this.exportManager.exportToExcel(filename);
+                    this.exportManager.exportExcel(options);
                     break;
                 case 'csv':
-                    this.exportManager.exportToCSV(filename);
+                    this.exportManager.exportCSV(options);
                     break;
                 default:
-                    this.exportManager.exportToJSON(filename);
+                    this.exportManager.exportJSON(options);
             }
 
+            console.log(`✅ Assessment saved successfully as ${format.toUpperCase()}`);
             this.showNotification(`Assessment saved as ${format.toUpperCase()} file`, 'success');
         } catch (error) {
-            console.error('Failed to save assessment:', error);
+            console.error('❌ Failed to save assessment:', error);
             this.showNotification(`Failed to save assessment: ${error.message}`, 'error');
         }
     }
@@ -654,7 +730,15 @@ class ALZAssessmentApp {
                         // Auto-refresh the UI
                         await this.refreshUIAfterUpload();
                         
-                        this.showNotification('Assessment uploaded and loaded successfully!', 'success');
+                        // Show success with details
+                        const itemCount = data.items?.length || 0;
+                        const assessmentType = data.assessmentType || 'Unknown';
+                        this.showNotification(
+                            `✅ Assessment uploaded successfully! Loaded ${itemCount} items (Type: ${assessmentType})`, 
+                            'success'
+                        );
+                        
+                        console.log('🎉 Upload process completed successfully!');
                         event.target.value = ''; // Reset file input
                         
                         resolve();
@@ -669,12 +753,18 @@ class ALZAssessmentApp {
     }
 
     /**
-     * Show or hide upload loader
+     * Show or hide upload loader with optional progress message
      */
-    showUploadLoader(show) {
+    showUploadLoader(show, message = 'Processing...') {
         const loader = document.getElementById('uploadLoader');
         if (loader) {
             loader.style.display = show ? 'flex' : 'none';
+            
+            // Update progress message if available
+            const loaderText = loader.querySelector('.loader-text');
+            if (loaderText && show) {
+                loaderText.textContent = message;
+            }
             
             // Disable/enable upload button to prevent multiple uploads
             const uploadBtn = document.getElementById('uploadAssessmentBtn');
@@ -694,14 +784,14 @@ class ALZAssessmentApp {
      */
     async refreshUIAfterUpload() {
         try {
-            // Refresh dashboard if visible
-            if (this.dashboardManager && document.getElementById('dashboardPanel').style.display !== 'none') {
-                await this.dashboardManager.renderDashboard();
+            // Refresh dashboard charts
+            if (this.dashboardManager) {
+                this.dashboardManager.updateCharts();
             }
             
-            // Refresh assessment view if visible
-            if (this.assessmentManager && document.getElementById('assessmentPanel').style.display !== 'none') {
-                await this.assessmentManager.renderAssessmentItems();
+            // Refresh assessment view
+            if (this.assessmentManager) {
+                this.assessmentManager.renderAssessmentItems();
             }
             
             // Update navigation to show current assessment
@@ -736,18 +826,20 @@ class ALZAssessmentApp {
         const checklist = this.dataLoader.getCurrentChecklist();
         const hasData = checklist && checklist.items && checklist.items.length > 0;
         
-        // Enable/disable navigation buttons based on data availability
-        const dashboardBtn = document.querySelector('[data-panel="dashboardPanel"]');
-        const assessmentBtn = document.querySelector('[data-panel="assessmentPanel"]');
-        const exportBtn = document.querySelector('[data-panel="exportPanel"]');
+        // Enable/disable navigation tabs based on data availability
+        const dashboardTab = document.getElementById('dashboardTab');
+        const assessmentTab = document.getElementById('assessmentTab');
+        const exportTab = document.getElementById('exportTab');
         
-        if (dashboardBtn) dashboardBtn.disabled = !hasData;
-        if (assessmentBtn) assessmentBtn.disabled = !hasData;
-        if (exportBtn) exportBtn.disabled = !hasData;
+        if (dashboardTab) dashboardTab.classList.toggle('disabled', !hasData);
+        if (assessmentTab) assessmentTab.classList.toggle('disabled', !hasData);
+        if (exportTab) exportTab.classList.toggle('disabled', !hasData);
         
-        // If we have data and currently showing welcome screen, switch to dashboard
-        if (hasData && document.getElementById('welcomeScreen').style.display !== 'none') {
-            this.showPanel('dashboardPanel');
+        // If we have data and currently showing welcome screen, switch to assessment content and dashboard
+        const welcomeScreen = document.getElementById('welcomeScreen');
+        if (hasData && welcomeScreen && welcomeScreen.style.display !== 'none') {
+            this.showAssessmentContent();
+            this.showView('dashboard');
         }
     }
 
@@ -755,28 +847,74 @@ class ALZAssessmentApp {
      * Parse Excel file and convert to assessment data
      */
     async parseExcelFile(file) {
+        const startTime = Date.now();
+        console.log('📊 Starting Excel file parsing:', {
+            fileName: file.name,
+            fileSize: `${(file.size / 1024).toFixed(2)} KB`,
+            timestamp: new Date().toISOString()
+        });
+        
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
+            
+            // Add timeout detection
+            const timeoutId = setTimeout(() => {
+                console.error('⏱️ Excel parsing timeout after 60 seconds');
+                reject(new Error('Excel file parsing timed out. The file may be too large or corrupted.'));
+            }, 60000); // 60 second timeout
+            
             reader.onload = async (e) => {
                 try {
+                    console.log('✅ File read complete, parsing workbook...');
+                    const readTime = Date.now() - startTime;
+                    console.log(`⏱️ Read time: ${readTime}ms`);
+                    
                     const data = new Uint8Array(e.target.result);
+                    console.log(`📦 Data size: ${(data.length / 1024).toFixed(2)} KB`);
+                    
                     const workbook = XLSX.read(data, { type: 'array' });
+                    console.log(`📋 Workbook loaded. Sheets: ${workbook.SheetNames.join(', ')}`);
                     
                     // Get the first worksheet
                     const firstSheetName = workbook.SheetNames[0];
                     const worksheet = workbook.Sheets[firstSheetName];
+                    console.log(`📄 Processing sheet: ${firstSheetName}`);
                     
                     // Convert to JSON
+                    const parseStart = Date.now();
                     const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    const parseTime = Date.now() - parseStart;
+                    console.log(`✅ Sheet parsed: ${jsonData.length} rows in ${parseTime}ms`);
                     
                     // Parse the Excel data to match our assessment format
+                    const conversionStart = Date.now();
                     const assessmentData = await this.convertExcelToAssessment(jsonData);
+                    const conversionTime = Date.now() - conversionStart;
+                    const totalTime = Date.now() - startTime;
+                    
+                    console.log('🎉 Excel parsing complete:', {
+                        totalRows: jsonData.length,
+                        itemsFound: assessmentData.items?.length || 0,
+                        conversionTime: `${conversionTime}ms`,
+                        totalTime: `${totalTime}ms`,
+                        assessmentType: assessmentData.assessmentType
+                    });
+                    
+                    clearTimeout(timeoutId);
                     resolve(assessmentData);
                 } catch (error) {
+                    console.error('❌ Excel parsing error:', error);
+                    clearTimeout(timeoutId);
                     reject(error);
                 }
             };
-            reader.onerror = () => reject(new Error('Failed to read Excel file'));
+            reader.onerror = () => {
+                console.error('❌ File read error');
+                clearTimeout(timeoutId);
+                reject(new Error('Failed to read Excel file'));
+            };
+            
+            console.log('📖 Starting file read...');
             reader.readAsArrayBuffer(file);
         });
     }
@@ -828,41 +966,84 @@ class ALZAssessmentApp {
      * Convert Excel/CSV data to assessment format
      */
     async convertExcelToAssessment(data) {
+        console.log('🔄 Converting Excel data to assessment format...');
+        console.log(`📊 Total rows: ${data.length}`);
+        
         // Find the header row (look for common column names)
+        // Azure Review Checklists Excel files typically have headers around row 6-8
         let headerRowIndex = -1;
         let headers = [];
         
-        for (let i = 0; i < Math.min(5, data.length); i++) {
+        console.log('🔍 Scanning for header row (checking first 15 rows)...');
+        
+        // Scan up to row 15 to account for metadata/title rows at the top
+        for (let i = 0; i < Math.min(15, data.length); i++) {
             const row = data[i];
-            if (row && Array.isArray(row)) {
-                const rowStr = row.join('').toLowerCase();
-                if (rowStr.includes('id') || rowStr.includes('guid') || rowStr.includes('recommendation') || rowStr.includes('status')) {
+            if (row && Array.isArray(row) && row.length > 5) { // Must have at least 5 columns
+                const rowStr = row.join('|').toLowerCase(); // Use pipe separator for better matching
+                
+                // Check if this row has multiple header-like terms (more reliable)
+                const headerTerms = ['id', 'guid', 'category', 'subcategory', 'text', 'description', 
+                                   'status', 'waf', 'severity', 'service', 'recommendation', 'check'];
+                const matchCount = headerTerms.filter(term => rowStr.includes(term)).length;
+                
+                // Row must have at least 3 header terms to be considered a header row
+                if (matchCount >= 3) {
                     headerRowIndex = i;
                     headers = row.map(header => header ? header.toString().toLowerCase().trim() : '');
+                    console.log(`Found header row at line ${i + 1} with ${matchCount} matching terms:`, row);
                     break;
                 }
             }
         }
         
         if (headerRowIndex === -1) {
-            throw new Error('Could not find header row in Excel/CSV file. Please ensure the file has columns like ID, Recommendation, Status, etc.');
+            console.error('❌ Header row not found');
+            console.log('First 5 rows for debugging:', data.slice(0, 5));
+            throw new Error('Could not find header row in Excel/CSV file. Please ensure the file has columns like ID, Category, Text, Status, etc. (Expected header row around lines 1-15)');
         }
+        
+        console.log(`✅ Header row found at index ${headerRowIndex}`);
+        console.log('📋 Headers:', headers);
         
         // Map column names to expected fields
         const columnMap = this.createColumnMap(headers);
+        console.log('🗺️ Column mapping:', columnMap);
         
         // Process data rows in batches to avoid UI blocking
         const items = [];
         const batchSize = 100; // Process 100 rows at a time
         const totalRows = data.length - headerRowIndex - 1;
+        let consecutiveEmptyRows = 0;
+        const maxEmptyRows = 10; // Stop after 10 consecutive empty rows
         
         for (let batchStart = headerRowIndex + 1; batchStart < data.length; batchStart += batchSize) {
             const batchEnd = Math.min(batchStart + batchSize, data.length);
             
+            // Update progress
+            const progress = Math.round(((batchEnd - headerRowIndex - 1) / totalRows) * 100);
+            this.showUploadLoader(true, `Reading Excel file... ${progress}% (${batchEnd - headerRowIndex - 1}/${totalRows} rows)`);
+            
             // Process batch
             for (let i = batchStart; i < batchEnd; i++) {
                 const row = data[i];
-                if (!row || !Array.isArray(row) || row.length === 0) continue;
+                
+                // Check if row is completely empty
+                const isEmptyRow = !row || !Array.isArray(row) || row.length === 0 || 
+                                   row.every(cell => !cell || cell.toString().trim() === '');
+                
+                if (isEmptyRow) {
+                    consecutiveEmptyRows++;
+                    // Stop processing if we hit too many consecutive empty rows
+                    if (consecutiveEmptyRows >= maxEmptyRows) {
+                        console.log(`⏹️ Stopped processing at row ${i} after ${consecutiveEmptyRows} consecutive empty rows`);
+                        batchStart = data.length; // Exit outer loop
+                        break;
+                    }
+                    continue;
+                }
+                
+                consecutiveEmptyRows = 0; // Reset counter when we find data
                 
                 const item = this.processExcelRow(row, columnMap, headers, i);
                 if (item && (item.id || item.recommendation)) {
@@ -870,21 +1051,39 @@ class ALZAssessmentApp {
                 }
             }
             
-            // Allow UI to update between batches
+            // Allow UI to update between batches (reduced delay for better performance)
             if (batchEnd < data.length) {
-                await new Promise(resolve => setTimeout(resolve, 10));
+                await new Promise(resolve => setTimeout(resolve, 1));
             }
         }
         
         if (items.length === 0) {
+            console.error('❌ No valid items found');
+            console.log('Troubleshooting: Check column mapping:', columnMap);
+            console.log('Sample data rows:', data.slice(headerRowIndex + 1, headerRowIndex + 4));
             throw new Error('No valid assessment items found in the file. Please check the file format.');
         }
 
-        // For items without IDs, try to match them using text similarity
+        console.log(`✅ Parsed ${items.length} items from Excel (actual data range: rows ${headerRowIndex + 1} to ~${headerRowIndex + items.length + 1})`);
+        const itemsWithIds = items.filter(item => item.id);
         const itemsWithoutIds = items.filter(item => !item.id && item.recommendation);
+        const itemsWithComments = items.filter(item => item.comment);
+        console.log(`📊 Items with IDs: ${itemsWithIds.length}, Items without IDs: ${itemsWithoutIds.length}`);
+        console.log(`💬 Items with comments: ${itemsWithComments.length}`);
+
+        // Try to determine assessment type from the data first
+        const assessmentType = this.detectAssessmentType(items);
+        console.log(`🎯 Detected assessment type: ${assessmentType}`);
+
+        // For items without IDs, try to match them using text similarity
         if (itemsWithoutIds.length > 0) {
+            console.log(`🔍 Starting matching process for ${itemsWithoutIds.length} items...`);
             try {
+                const matchStart = Date.now();
+                this.showUploadLoader(true, `Matching ${itemsWithoutIds.length} items to checklist...`);
                 const matchedItems = await this.matchItemsToChecklist(itemsWithoutIds, assessmentType);
+                const matchTime = Date.now() - matchStart;
+                console.log(`✅ Matching complete: ${matchedItems.length} items matched in ${matchTime}ms`);
                 
                 // Replace items without IDs with matched ones
                 const itemsWithIds = items.filter(item => item.id);
@@ -895,9 +1094,6 @@ class ALZAssessmentApp {
                 // Continue without matching - items without IDs will be filtered out later
             }
         }
-
-        // Try to determine assessment type from the data
-        const assessmentType = this.detectAssessmentType(items);
         
         return {
             assessmentType: assessmentType,
@@ -913,27 +1109,46 @@ class ALZAssessmentApp {
         const map = {};
         
         headers.forEach((header, index) => {
-            const h = header.toLowerCase();
+            const h = header.toLowerCase().trim();
             
-            // ID mapping
-            if (h.includes('id') || h.includes('guid') || h.includes('reference')) {
+            // ID mapping (Azure Review Checklists uses "id")
+            if (h === 'id' || h === 'guid' || h === 'reference' || h.includes('identifier')) {
                 map.id = index;
             }
             // Status mapping
-            else if (h.includes('status') || h.includes('compliance') || h.includes('result')) {
+            else if (h === 'status' || h.includes('compliance') || h.includes('result')) {
                 map.status = index;
             }
-            // Comments mapping
-            else if (h.includes('comment') || h.includes('note') || h.includes('remark') || h.includes('description')) {
+            // Comments mapping (handle typos like 'commant')
+            else if (h === 'comments' || h === 'comment' || h === 'commant' || h === 'notes' || h === 'note' || h === 'remarks' || h === 'remark') {
                 map.comments = index;
             }
-            // Category mapping
-            else if (h.includes('category') || h.includes('domain') || h.includes('area')) {
+            // Category mapping (includes 'design area')
+            else if (h === 'category' || h === 'design area' || h.includes('domain') || h.includes('area')) {
                 map.category = index;
             }
-            // Recommendation mapping
-            else if (h.includes('recommendation') || h.includes('title') || h.includes('check') || h.includes('text')) {
-                map.recommendation = index;
+            // Subcategory mapping (Azure Review Checklists specific)
+            else if (h === 'subcategory' || h.includes('sub-category') || h.includes('sub category')) {
+                map.subcategory = index;
+            }
+            // Recommendation/Text mapping (includes 'checklist item' and 'topic')
+            else if (h === 'text' || h === 'recommendation' || h === 'checklist item' || h === 'topic' || h === 'title' || h === 'check' || h.includes('description')) {
+                // Prioritize "text" or "checklist item" columns
+                if (!map.recommendation || h === 'text' || h === 'checklist item') {
+                    map.recommendation = index;
+                }
+            }
+            // WAF (Well-Architected Framework) mapping (includes 'waf pillar')
+            else if (h === 'waf' || h === 'waf pillar' || h.includes('well-architected')) {
+                map.waf = index;
+            }
+            // Severity mapping (handle typo 'sevirity')
+            else if (h === 'severity' || h === 'sevirity' || h.includes('priority')) {
+                map.severity = index;
+            }
+            // Service mapping
+            else if (h === 'service' || h.includes('resource')) {
+                map.service = index;
             }
         });
         
@@ -972,16 +1187,32 @@ class ALZAssessmentApp {
         
         // Extract comments
         if (columnMap.comments !== undefined && row[columnMap.comments]) {
-            item.comments = row[columnMap.comments].toString().trim();
+            item.comment = row[columnMap.comments].toString().trim();
         }
         
-        // Extract other fields if available
+        // Extract Azure Review Checklists specific fields
         if (columnMap.category !== undefined && row[columnMap.category]) {
             item.category = row[columnMap.category].toString().trim();
         }
         
+        if (columnMap.subcategory !== undefined && row[columnMap.subcategory]) {
+            item.subcategory = row[columnMap.subcategory].toString().trim();
+        }
+        
         if (columnMap.recommendation !== undefined && row[columnMap.recommendation]) {
             item.recommendation = row[columnMap.recommendation].toString().trim();
+        }
+        
+        if (columnMap.waf !== undefined && row[columnMap.waf]) {
+            item.waf = row[columnMap.waf].toString().trim();
+        }
+        
+        if (columnMap.severity !== undefined && row[columnMap.severity]) {
+            item.severity = row[columnMap.severity].toString().trim();
+        }
+        
+        if (columnMap.service !== undefined && row[columnMap.service]) {
+            item.service = row[columnMap.service].toString().trim();
         }
         
         // If no recommendation column found, try to find it in the row
@@ -1093,58 +1324,133 @@ class ALZAssessmentApp {
      * Match Excel items without IDs to checklist items by recommendation text
      */
     async matchItemsToChecklist(items, assessmentType) {
+        console.log(`🔍 matchItemsToChecklist started with ${items.length} items`);
+        const matchStart = Date.now();
+        
         // First, make sure we have the checklist loaded
         if (!this.dataLoader || !this.dataLoader.getCurrentChecklist()) {
+            console.log('⏳ Checklist not loaded, loading now...');
             // If checklist isn't loaded yet, try to load it
             try {
                 await this.dataLoader.loadChecklist(assessmentType, 'en');
+                console.log('✅ Checklist loaded successfully');
             } catch (error) {
-                console.error('Failed to load checklist for matching:', error);
+                console.error('❌ Failed to load checklist for matching:', error);
                 return items; // Return items as-is if we can't load checklist
             }
         }
 
         const checklist = this.dataLoader.getCurrentChecklist();
         if (!checklist || !checklist.items) {
+            console.error('❌ No checklist available for matching');
             return items; // Return items as-is if no checklist available
         }
 
+        console.log(`📋 Checklist has ${checklist.items.length} items`);
         const matchedItems = [];
+        let matchedCount = 0;
+        let unmatchedCount = 0;
         
-        for (const excelItem of items) {
-            if (excelItem.id) {
-                // Item already has ID, keep it as-is
-                matchedItems.push(excelItem);
-                continue;
-            }
+        // PERFORMANCE OPTIMIZATION: Create a keyword index for faster matching
+        console.log('🗂️ Building keyword index...');
+        const indexStart = Date.now();
+        const checklistIndex = new Map();
+        checklist.items.forEach(item => {
+            const keywords = item.text.toLowerCase()
+                .split(/\s+/)
+                .filter(w => w.length > 4) // Use longer words as keywords
+                .slice(0, 10); // Take first 10 keywords only
+            
+            keywords.forEach(keyword => {
+                if (!checklistIndex.has(keyword)) {
+                    checklistIndex.set(keyword, []);
+                }
+                checklistIndex.get(keyword).push(item);
+            });
+        });
+        const indexTime = Date.now() - indexStart;
+        console.log(`✅ Keyword index built: ${checklistIndex.size} keywords in ${indexTime}ms`);
+        
+        // Process items in batches for better performance
+        const batchSize = 50;
+        console.log(`🔄 Processing ${items.length} items in batches of ${batchSize}...`);
+        
+        for (let i = 0; i < items.length; i += batchSize) {
+            const batch = items.slice(i, i + batchSize);
+            const batchNum = Math.floor(i / batchSize) + 1;
+            const totalBatches = Math.ceil(items.length / batchSize);
+            const progress = Math.round((i / items.length) * 100);
+            
+            console.log(`⏳ Processing batch ${batchNum}/${totalBatches} (${progress}%)`);
+            this.showUploadLoader(true, `Matching items... ${progress}% (${i}/${items.length})`);
+            
+            for (const excelItem of batch) {
+                if (excelItem.id) {
+                    // Item already has ID, keep it as-is
+                    matchedItems.push(excelItem);
+                    continue;
+                }
 
-            // Try to match by recommendation text
-            let bestMatch = null;
-            let bestScore = 0;
+                // Try to match by recommendation text using keyword index
+                let bestMatch = null;
+                let bestScore = 0;
 
-            if (excelItem.recommendation) {
-                for (const checklistItem of checklist.items) {
-                    const score = this.calculateTextSimilarity(
-                        excelItem.recommendation.toLowerCase(),
-                        checklistItem.text.toLowerCase()
-                    );
+                if (excelItem.recommendation) {
+                    // Get keywords from Excel item
+                    const excelKeywords = excelItem.recommendation.toLowerCase()
+                        .split(/\s+/)
+                        .filter(w => w.length > 4)
+                        .slice(0, 10);
                     
-                    if (score > bestScore && score > 0.3) { // Minimum similarity threshold
-                        bestScore = score;
-                        bestMatch = checklistItem;
+                    // Get candidate items from index (much faster than checking all items)
+                    const candidates = new Set();
+                    excelKeywords.forEach(keyword => {
+                        const items = checklistIndex.get(keyword);
+                        if (items) {
+                            items.forEach(item => candidates.add(item));
+                        }
+                    });
+                    
+                    // Only check candidates, not all checklist items
+                    for (const checklistItem of candidates) {
+                        const score = this.calculateTextSimilarity(
+                            excelItem.recommendation.toLowerCase(),
+                            checklistItem.text.toLowerCase()
+                        );
+                        
+                        if (score > bestScore && score > 0.3) { // Minimum similarity threshold
+                            bestScore = score;
+                            bestMatch = checklistItem;
+                        }
                     }
                 }
-            }
 
-            if (bestMatch) {
-                // Found a match, use the checklist item's ID
-                excelItem.id = bestMatch.id;
-                matchedItems.push(excelItem);
-            } else {
-                // No match found, skip this item but log it
-                console.log('Could not match Excel item to checklist:', excelItem.recommendation?.substring(0, 100));
+                if (bestMatch) {
+                    // Found a match, use the checklist item's ID
+                    excelItem.id = bestMatch.id;
+                    matchedItems.push(excelItem);
+                    matchedCount++;
+                } else {
+                    // No match found, skip this item but log it
+                    unmatchedCount++;
+                    console.warn(`⚠️ Could not match item (score threshold not met): ${excelItem.recommendation?.substring(0, 80)}...`);
+                }
+            }
+            
+            // Allow UI to breathe between batches
+            if (i + batchSize < items.length) {
+                await new Promise(resolve => setTimeout(resolve, 5));
             }
         }
+
+        const matchTime = Date.now() - matchStart;
+        console.log('🎉 Matching complete:', {
+            totalItems: items.length,
+            matched: matchedCount,
+            unmatched: unmatchedCount,
+            timeMs: matchTime,
+            avgTimePerItem: `${(matchTime / items.length).toFixed(2)}ms`
+        });
 
         return matchedItems;
     }
@@ -1261,6 +1567,7 @@ class ALZAssessmentApp {
         });
 
         // Apply uploaded progress to matching items
+        let commentsApplied = 0;
         currentItems.forEach(currentItem => {
             const uploadedItem = uploadedMap.get(currentItem.id);
             if (uploadedItem) {
@@ -1268,16 +1575,19 @@ class ALZAssessmentApp {
                     currentItem.status = uploadedItem.status;
                     appliedCount++;
                 }
-                if (uploadedItem.comments) {
-                    currentItem.comments = uploadedItem.comments;
+                if (uploadedItem.comment) {
+                    currentItem.comment = uploadedItem.comment;
+                    commentsApplied++;
                 }
             }
         });
 
+        console.log(`📝 Applied ${commentsApplied} comments to items`);
+
         // Save progress to localStorage
         this.autoSaveProgress();
 
-        this.showNotification(`Applied progress to ${appliedCount} items`, 'success');
+        this.showNotification(`Applied progress to ${appliedCount} items (${commentsApplied} with comments)`, 'success');
     }
 }
 

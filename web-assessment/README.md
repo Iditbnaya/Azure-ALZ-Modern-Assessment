@@ -2,6 +2,16 @@
 
 A modern, web-based replacement for the Excel-based Azure Landing Zone assessment spreadsheet. This tool provides an interactive interface for conducting ALZ assessments with real-time progress tracking, visual dashboards, and multiple export formats.
 
+## 📜 Attribution
+
+**This tool uses checklist content from:**
+
+- **Source**: [Azure/review-checklists](https://github.com/Azure/review-checklists) (Microsoft Corporation)
+- **License**: MIT License
+- **Content Authors**: Microsoft FTA team and Azure community contributors
+
+All assessment recommendations and best practices originate from the official Microsoft Azure Review Checklists repository. This tool provides an enhanced web interface for working with that content.
+
 ## Features
 
 ### 🔍 **Interactive Assessment**
@@ -30,6 +40,13 @@ A modern, web-based replacement for the Excel-based Azure Landing Zone assessmen
 - Progressive Web App (PWA) capabilities
 - Offline functionality (when cached)
 - Auto-save progress protection
+
+## Security Considerations
+
+- **Local Storage**: Assessment progress is stored in browser localStorage
+- **No Server Data**: All processing happens client-side
+- **File Access**: Only reads JSON files, no write operations
+- **Links**: External links open in new tabs with security attributes
 
 ## Getting Started
 
@@ -88,6 +105,16 @@ The application loads checklist data from:
 - **AppSvc**: App Service
 - **AVD**: Azure Virtual Desktop
 - **APIM**: API Management
+- **ACR**: Azure Container Registry
+- **COSMOS**: Azure Cosmos DB
+- **DataFactory**: Azure Data Factory
+- **EventHub**: Azure Event Hub
+- **KeyVault**: Azure Key Vault
+- **MySQL**: Azure Database for MySQL
+- **PostgreSQL**: Azure Database for PostgreSQL
+- **Redis**: Azure Cache for Redis
+- **Security**: Azure Security
+- **SQL**: Azure SQL Database
 
 ## Browser Compatibility
 
@@ -172,12 +199,7 @@ The application loads checklist data from:
 
 Press F12 to open developer tools and check the Console tab for detailed error messages and debug information.
 
-## Security Considerations
 
-- **Local Storage**: Assessment progress is stored in browser localStorage
-- **No Server Data**: All processing happens client-side
-- **File Access**: Only reads JSON files, no write operations
-- **Links**: External links open in new tabs with security attributes
 
 ## Future Enhancements
 

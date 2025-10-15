@@ -1,0 +1,537 @@
+{
+    "categories": [
+        {
+            "name": "Topología de red y conectividad"
+        }
+    ],
+    "items": [
+        {
+            "category": "Topología de red y conectividad",
+            "guid": "b71ca41b-3a80-48f3-a6cd-22cdf197c1cf",
+            "id": "A01.02",
+            "link": "https://learn.microsoft.com/azure/cloud-adoption-framework/ready/landing-zone/design-area/resource-org-management-groups#management-groups-in-the-azure-landing-zone-accelerator",
+            "severity": "Medio",
+            "subcategory": "Entrega de aplicaciones",
+            "text": "Realice la entrega de aplicaciones dentro de las zonas de aterrizaje para aplicaciones internas (corporativas) y externas (en línea).",
+            "training": "https://learn.microsoft.com/learn/paths/secure-application-delivery/",
+            "waf": "Seguridad"
+        },
+        {
+            "category": "Topología de red y conectividad",
+            "graph": "resources | where type == 'microsoft.network/applicationgateways' | project id, compliant = properties.sku.name in ('Standard_v2', 'WAF_v2') | project id,compliant",
+            "guid": "553585a6-abe0-11ed-afa1-0242ac120002",
+            "id": "A01.03",
+            "link": "https://learn.microsoft.com/azure/application-gateway/overview-v2",
+            "service": "App Gateway",
+            "severity": "Medio",
+            "subcategory": "Puerta de enlace de aplicaciones",
+            "text": "Asegúrese de que usa la SKU de Application Gateway v2",
+            "training": "https://learn.microsoft.com/learn/paths/secure-application-delivery/",
+            "waf": "Seguridad"
+        },
+        {
+            "category": "Topología de red y conectividad",
+            "graph": "resources | where type == 'microsoft.network/loadbalancers' | project id, compliant=(tolower(sku.name) == 'standard')",
+            "guid": "4e35fbf5-0ae2-48b2-97ce-753353edbd1a",
+            "id": "A01.04",
+            "link": "https://learn.microsoft.com/azure/load-balancer/load-balancer-overview",
+            "service": "Load Balancer",
+            "severity": "Medio",
+            "subcategory": "Equilibrador de carga",
+            "text": "Asegúrese de que usa la SKU estándar para los equilibradores de carga de Azure.",
+            "waf": "Seguridad"
+        },
+        {
+            "category": "Topología de red y conectividad",
+            "guid": "9432621a-8397-4654-a882-5bc856b7ef83",
+            "id": "A01.05",
+            "link": "https://learn.microsoft.com/azure/load-balancer/load-balancer-standard-availability-zones",
+            "service": "Load Balancer",
+            "severity": "Medio",
+            "subcategory": "Equilibrador de carga",
+            "text": "Asegúrese de que las direcciones IP de front-end de Load Balancers sean redundantes de zona (a menos que necesite front-end zonales).",
+            "waf": "Seguridad"
+        },
+        {
+            "category": "Topología de red y conectividad",
+            "graph": "resources | where type=='microsoft.network/applicationgateways' | extend subnetId = tostring(properties.gatewayIPConfigurations[0].properties.subnet.id) | project id, subnetId | join (resources | where type=='microsoft.network/virtualnetworks' | project id,subnets=properties.subnets | mv-expand subnets | mv-expand subnets.properties.addressPrefixes | project id, subnetId = tostring(subnets.id), prefix1 = subnets.properties.addressPrefix, prefix2 = subnets.properties.addressPrefixes | mv-expand prefix2 | extend prefix = iff(isnotnull(prefix1), prefix1, prefix2) | extend subnetPrefixLength = split(prefix, '/')[1])on subnetId | extend compliant = (subnetPrefixLength <= 24 or subnetPrefixLength == 64) | distinct id,compliant",
+            "guid": "dfc50f87-3800-424c-937b-ed5f186e7c15",
+            "id": "A01.06",
+            "link": "https://learn.microsoft.com/azure/application-gateway/configuration-infrastructure#size-of-the-subnet",
+            "service": "App Gateway",
+            "severity": "Medio",
+            "subcategory": "Puerta de enlace de aplicaciones",
+            "text": "Application Gateways v2 debe implementarse en subredes con prefijos IP iguales o mayores que /24",
+            "training": "https://learn.microsoft.com/learn/paths/secure-application-delivery/",
+            "waf": "Seguridad"
+        },
+        {
+            "category": "Topología de red y conectividad",
+            "description": "La administración de proxies inversos en general y WAF en particular está más cerca de la aplicación que de las redes, por lo que pertenecen a la misma suscripción que la aplicación. La centralización de Application Gateway y WAF en la suscripción de conectividad puede ser correcta si la administra un solo equipo.",
+            "guid": "48b662d6-d15f-4512-a654-98f6dfe237de",
+            "id": "A01.07",
+            "link": "https://learn.microsoft.com/azure/web-application-firewall/ag/ag-overview",
+            "service": "App Gateway",
+            "severity": "Medio",
+            "subcategory": "Puerta de enlace de aplicaciones",
+            "text": "Implemente Azure Application Gateway v2 o NVA de asociados que se usan para proxy de conexiones HTTP(S) entrantes dentro de la red virtual de la zona de aterrizaje y con las aplicaciones que protegen.",
+            "training": "https://learn.microsoft.com/learn/paths/secure-application-delivery/",
+            "waf": "Seguridad"
+        },
+        {
+            "category": "Topología de red y conectividad",
+            "guid": "f109e1f3-c79b-4f14-82de-6b5c22314d08",
+            "id": "A01.08",
+            "link": "https://learn.microsoft.com/azure/web-application-firewall/ag/ag-overview",
+            "service": "App Gateway",
+            "severity": "Medio",
+            "subcategory": "Puerta de enlace de aplicaciones",
+            "text": "Utilice una red DDoS o planes de protección IP para todas las direcciones IP públicas en las zonas de aterrizaje de aplicaciones.",
+            "training": "https://learn.microsoft.com/learn/paths/secure-networking-infrastructure/",
+            "waf": "Seguridad"
+        },
+        {
+            "category": "Topología de red y conectividad",
+            "graph": "resources | where type =~ 'microsoft.network/applicationGateways' | extend compliant = (isnotnull(properties.autoscaleConfiguration) and properties.autoscaleConfiguration.minCapacity >= 2) | distinct id,compliant",
+            "guid": "135bf4ac-f9db-461f-b76b-2ee9e30b12c0",
+            "id": "A01.09",
+            "link": "https://learn.microsoft.com/azure/application-gateway/application-gateway-autoscaling-zone-redundant",
+            "service": "App Gateway",
+            "severity": "Medio",
+            "subcategory": "Puerta de enlace de aplicaciones",
+            "text": "Configure el escalado automático con una cantidad mínima de instancias de dos.",
+            "training": "https://learn.microsoft.com/learn/paths/secure-application-delivery/",
+            "waf": "Fiabilidad"
+        },
+        {
+            "category": "Topología de red y conectividad",
+            "graph": "resources | where type =~ 'microsoft.network/applicationGateways' | extend compliant = (isnotnull(zones) and array_length(zones) > 1) | distinct id,compliant",
+            "guid": "060c6964-52b5-48db-af8b-83e4b2d85349",
+            "id": "A01.10",
+            "link": "https://learn.microsoft.com/azure/reliability/migrate-app-gateway-v2",
+            "service": "App Gateway",
+            "severity": "Medio",
+            "subcategory": "Puerta de enlace de aplicaciones",
+            "text": "Implementación de Application Gateway en zonas de disponibilidad",
+            "training": "https://learn.microsoft.com/learn/paths/secure-application-delivery/",
+            "waf": "Fiabilidad"
+        },
+        {
+            "category": "Topología de red y conectividad",
+            "guid": "3f29812b-2363-4cef-b179-b599de0d5973",
+            "id": "A01.12",
+            "link": "https://learn.microsoft.com/azure/ddos-protection/ddos-protection-overview",
+            "service": "Front Door",
+            "severity": "Medio",
+            "subcategory": "Entrega de aplicaciones",
+            "text": "Al usar Front Door y Application Gateway para ayudar a proteger las aplicaciones HTTP/S, use directivas de WAF en Front Door. Bloquee Application Gateway para recibir tráfico solo desde Front Door.",
+            "training": "https://learn.microsoft.com/learn/paths/secure-networking-infrastructure/",
+            "waf": "Seguridad"
+        },
+        {
+            "ammp": true,
+            "category": "Topología de red y conectividad",
+            "guid": "cd4cd21b-0881-437f-9e6c-4cfd3e504547",
+            "id": "A01.13",
+            "link": "https://learn.microsoft.com/azure/web-application-firewall/ag/ag-overview",
+            "service": "Traffic Manager",
+            "severity": "Alto",
+            "subcategory": "Administrador de tráfico",
+            "text": "Use el Administrador de tráfico para entregar aplicaciones globales que abarquen protocolos distintos de HTTP/S.",
+            "training": "https://learn.microsoft.com/learn/paths/secure-networking-infrastructure/",
+            "waf": "Fiabilidad"
+        },
+        {
+            "category": "Topología de red y conectividad",
+            "guid": "3b4b3e88-a459-4ed5-a22f-644dfbc58204",
+            "id": "A01.14",
+            "link": "https://learn.microsoft.com/azure/active-directory/app-proxy/application-proxy#how-application-proxy-works",
+            "service": "Entra",
+            "severity": "Bajo",
+            "subcategory": "Entrega de aplicaciones",
+            "text": "Si los usuarios solo necesitan acceso a aplicaciones internas, ¿se ha considerado Microsoft Entra ID Application Proxy como una alternativa a Azure Virtual Desktop (AVD)?",
+            "training": "https://learn.microsoft.com/learn/modules/configure-azure-ad-application-proxy/",
+            "waf": "Seguridad"
+        },
+        {
+            "category": "Topología de red y conectividad",
+            "guid": "01ca7cf1-5754-442d-babb-8ba6772e5c30",
+            "id": "A01.15",
+            "link": "https://learn.microsoft.com/azure/active-directory/app-proxy/application-proxy#how-application-proxy-works",
+            "service": "Entra",
+            "severity": "Medio",
+            "subcategory": "Entrega de aplicaciones",
+            "text": "Para reducir el número de puertos de firewall abiertos para las conexiones entrantes en la red, considere la posibilidad de usar el proxy de aplicación de Microsoft Entra ID para proporcionar a los usuarios remotos acceso seguro y autenticado a las aplicaciones internas.",
+            "training": "https://learn.microsoft.com/learn/paths/implement-applications-external-access-azure-ad/",
+            "waf": "Seguridad"
+        },
+        {
+            "ammp": true,
+            "category": "Topología de red y conectividad",
+            "graph": "resources | where type=='microsoft.network/loadbalancers' | extend countOutRules=array_length(properties.outboundRules) | extend compliant = (countOutRules == 0) | distinct id,compliant",
+            "guid": "97a2fd46-64b0-1dfa-b72d-9c8869496d75",
+            "id": "A01.22",
+            "link": "https://learn.microsoft.com/azure/nat-gateway/nat-overview#outbound-connectivity",
+            "service": "Load Balancer",
+            "severity": "Alto",
+            "subcategory": "Equilibrador de carga",
+            "text": "Use Azure NAT Gateway en lugar de las reglas de salida de Load Balancer para mejorar la escalabilidad de SNAT",
+            "waf": "Fiabilidad"
+        },
+        {
+            "ammp": true,
+            "category": "Topología de red y conectividad",
+            "graph": "resources | where type == 'microsoft.network/applicationgatewaywebapplicationfirewallpolicies' | mv-expand properties.managedRules.managedRuleSets | project id, rulesettype = properties_managedRules_managedRuleSets.ruleSetType | extend compliant1 = (rulesettype == 'Microsoft_BotManagerRuleSet') | project id, compliant1 | summarize compliant = max(compliant1) by id",
+            "guid": "2f8e81eb-8e68-4026-8b1f-70f9b05f7cf9",
+            "id": "A01.37",
+            "link": "https://learn.microsoft.com/azure/web-application-firewall/ag/bot-protection",
+            "service": "App Gateway",
+            "severity": "Alto",
+            "subcategory": "Puerta de enlace de aplicaciones",
+            "text": "Habilite el conjunto de reglas de protección contra bots de WAF de Azure Application Gateway. Las reglas de bots detectan bots buenos y malos.",
+            "waf": "Seguridad"
+        },
+        {
+            "ammp": true,
+            "category": "Topología de red y conectividad",
+            "guid": "8ea8e0d4-84e8-4b33-aeab-493f6391b4d6",
+            "id": "A01.38",
+            "link": "https://learn.microsoft.com/azure/web-application-firewall/ag/application-gateway-waf-request-size-limits#request-body-inspection",
+            "service": "App Gateway",
+            "severity": "Alto",
+            "subcategory": "Puerta de enlace de aplicaciones",
+            "text": "Asegúrese de que la característica de inspección del cuerpo de la solicitud esté habilitada en la directiva WAF de Azure Application Gateway.",
+            "waf": "Seguridad"
+        },
+        {
+            "ammp": true,
+            "category": "Topología de red y conectividad",
+            "guid": "a4dd86d3-5ffa-408c-b660-cce073d085b8",
+            "id": "A01.39",
+            "link": "https://learn.microsoft.com/azure/web-application-firewall/ag/best-practices#tune-your-waf",
+            "service": "App Gateway",
+            "severity": "Alto",
+            "subcategory": "Puerta de enlace de aplicaciones",
+            "text": "Ajuste el WAF de Azure Application Gateway en modo de detección para la carga de trabajo. Reduzca las detecciones de falsos positivos.",
+            "waf": "Seguridad"
+        },
+        {
+            "ammp": true,
+            "category": "Topología de red y conectividad",
+            "guid": "baf8e317-2397-4d49-b3d1-0dcc16d8778d",
+            "id": "A01.40",
+            "link": "https://learn.microsoft.com/azure/web-application-firewall/ag/policy-overview?source=recommendations",
+            "service": "App Gateway",
+            "severity": "Alto",
+            "subcategory": "Puerta de enlace de aplicaciones",
+            "text": "Implemente la directiva de WAF para Application Gateway en modo \"Prevención\".",
+            "waf": "Seguridad"
+        },
+        {
+            "category": "Topología de red y conectividad",
+            "guid": "43fae595-8a32-4299-a69e-0f32c454dcc9",
+            "id": "A01.41",
+            "link": "https://learn.microsoft.com/azure/web-application-firewall/ag/rate-limiting-overview",
+            "service": "App Gateway",
+            "severity": "Medio",
+            "subcategory": "Puerta de enlace de aplicaciones",
+            "text": "Agregue limitación de velocidad al WAF de Azure Application Gateway. La limitación de velocidad bloquea a los clientes que envían accidental o intencionalmente grandes cantidades de tráfico en un corto período de tiempo.",
+            "waf": "Seguridad"
+        },
+        {
+            "category": "Topología de red y conectividad",
+            "guid": "041e0ad8-7b12-4694-a0b7-a0e25ee2470f",
+            "id": "A01.42",
+            "link": "https://learn.microsoft.com/azure/web-application-firewall/ag/rate-limiting-overview#rate-limiting-details",
+            "service": "App Gateway",
+            "severity": "Medio",
+            "subcategory": "Puerta de enlace de aplicaciones",
+            "text": "Use un umbral alto para los límites de velocidad de WAF de Azure Application Gateway. Los umbrales de límite de velocidad altos evitan bloquear el tráfico legítimo, a la vez que proporcionan protección contra un número extremadamente alto de solicitudes que podrían sobrecargar su infraestructura. ",
+            "waf": "Seguridad"
+        },
+        {
+            "category": "Topología de red y conectividad",
+            "guid": "99937189-ff78-492a-b9ca-18d828d82b37",
+            "id": "A01.43",
+            "link": "https://learn.microsoft.com/azure/web-application-firewall/ag/best-practices#geo-filtering-best-practices",
+            "service": "App Gateway",
+            "severity": "Bajo",
+            "subcategory": "Puerta de enlace de aplicaciones",
+            "text": "Si no espera tráfico de todas las regiones geográficas, utilice filtros geográficos para bloquear el tráfico de países no esperados.",
+            "waf": "Seguridad"
+        },
+        {
+            "category": "Topología de red y conectividad",
+            "guid": "349a15c1-52f4-4319-9078-3895d95ecafd",
+            "id": "A01.44",
+            "link": "https://learn.microsoft.com/azure/web-application-firewall/ag/geomatch-custom-rules",
+            "service": "App Gateway",
+            "severity": "Medio",
+            "subcategory": "Puerta de enlace de aplicaciones",
+            "text": "Especifique la ubicación desconocida (ZZ) al filtrar geográficamente el tráfico con el WAF de Azure Application Gateway. Evite bloquear accidentalmente solicitudes legítimas cuando las direcciones IP no puedan coincidir geográficamente.",
+            "waf": "Seguridad"
+        },
+        {
+            "category": "Topología de red y conectividad",
+            "guid": "6c19dfd5-a61c-436c-9001-491b9b3d0228",
+            "id": "A01.45",
+            "link": "https://learn.microsoft.com/azure/web-application-firewall/ag/best-practices#use-the-latest-ruleset-versions",
+            "service": "App Gateway",
+            "severity": "Medio",
+            "subcategory": "Puerta de enlace de aplicaciones",
+            "text": "Use la versión más reciente del conjunto de reglas WAF de Azure Application Gateway. Las actualizaciones del conjunto de reglas se actualizan periódicamente para tener en cuenta el panorama actual de amenazas.",
+            "waf": "Seguridad"
+        },
+        {
+            "category": "Topología de red y conectividad",
+            "guid": "f84106a2-2e9e-42ac-add6-d3416ecfed53",
+            "id": "A01.46",
+            "link": "https://learn.microsoft.com/azure/web-application-firewall/ag/best-practices#add-diagnostic-settings-to-save-your-wafs-logs",
+            "service": "App Gateway",
+            "severity": "Medio",
+            "subcategory": "Puerta de enlace de aplicaciones",
+            "text": "Agregue la configuración de diagnóstico para guardar los registros de WAF de Azure Application Gateway.",
+            "waf": "Operaciones"
+        },
+        {
+            "category": "Topología de red y conectividad",
+            "guid": "92664c60-47e3-4591-8b1b-8d557656e686",
+            "id": "A01.48",
+            "link": "https://learn.microsoft.com/azure/web-application-firewall/ag/best-practices#send-logs-to-microsoft-sentinel",
+            "service": "App Gateway",
+            "severity": "Medio",
+            "subcategory": "Puerta de enlace de aplicaciones",
+            "text": "Envíe registros de WAF de Azure Application Gateway a Microsoft Sentinel.",
+            "waf": "Operaciones"
+        },
+        {
+            "category": "Topología de red y conectividad",
+            "guid": "ba0e9b26-6e0d-4ec8-8541-023c00afd5b7",
+            "id": "A01.50",
+            "link": "https://learn.microsoft.com/azure/web-application-firewall/ag/best-practices#define-your-waf-configuration-as-code",
+            "service": "App Gateway",
+            "severity": "Medio",
+            "subcategory": "Puerta de enlace de aplicaciones",
+            "text": "Defina la configuración de WAF de Azure Application Gateway como código. Mediante el uso de código, puede adoptar más fácilmente una nueva versión del conjunto de reglas y obtener protección adicional.",
+            "waf": "Operaciones"
+        },
+        {
+            "category": "Topología de red y conectividad",
+            "guid": "f17ec301-8470-4afd-aabc-c1fdfe47dcc0",
+            "id": "A01.51",
+            "link": "https://learn.microsoft.com/azure/web-application-firewall/ag/policy-overview",
+            "service": "App Gateway",
+            "severity": "Medio",
+            "subcategory": "Puerta de enlace de aplicaciones",
+            "text": "Utilice directivas de WAF en lugar de la configuración de WAF heredada.",
+            "waf": "Operaciones"
+        },
+        {
+            "category": "Topología de red y conectividad",
+            "guid": "d4eb8667-f8cb-4cdd-94e6-2f967ba98f88",
+            "id": "A01.52",
+            "link": "https://learn.microsoft.com/azure/virtual-wan/scenario-secured-hub-app-gateway",
+            "service": "App Gateway",
+            "severity": "Medio",
+            "subcategory": "Puerta de enlace de aplicaciones",
+            "text": "Filtre el tráfico entrante en los back-end para que solo acepten conexiones de la subred de Application Gateway, por ejemplo, con grupos de seguridad de red.",
+            "waf": "Seguridad"
+        },
+        {
+            "category": "Topología de red y conectividad",
+            "guid": "a66f0fd8-2ca4-422e-8df3-235148127ca2",
+            "id": "A01.54",
+            "link": "https://learn.microsoft.com/azure/application-gateway/ssl-overview",
+            "service": "App Gateway",
+            "severity": "Alto",
+            "subcategory": "Puerta de enlace de aplicaciones",
+            "text": "Debe cifrar el tráfico a los servidores backend.",
+            "waf": "Seguridad"
+        },
+        {
+            "category": "Topología de red y conectividad",
+            "guid": "3dba65cb-834d-44d8-a3ca-a6aa2f1587be",
+            "id": "A01.55",
+            "link": "https://learn.microsoft.com/azure/web-application-firewall/overview",
+            "service": "App Gateway",
+            "severity": "Alto",
+            "subcategory": "Puerta de enlace de aplicaciones",
+            "text": "Debe utilizar un firewall de aplicaciones web.",
+            "waf": "Seguridad"
+        },
+        {
+            "category": "Topología de red y conectividad",
+            "guid": "0158fcb6-0bc1-4687-832f-cc7c359c22d2",
+            "id": "A01.56",
+            "link": "https://learn.microsoft.com/azure/application-gateway/redirect-overview",
+            "service": "App Gateway",
+            "severity": "Medio",
+            "subcategory": "Puerta de enlace de aplicaciones",
+            "text": "Redirigir HTTP a HTTPS",
+            "waf": "Seguridad"
+        },
+        {
+            "category": "Topología de red y conectividad",
+            "guid": "bb697864-1b4c-43af-8667-90cc69aaed5f",
+            "id": "A01.57",
+            "link": "https://learn.microsoft.com/azure/application-gateway/how-application-gateway-works#modifications-to-the-request",
+            "service": "App Gateway",
+            "severity": "Medio",
+            "subcategory": "Puerta de enlace de aplicaciones",
+            "text": "Utilice cookies administradas por puerta de enlace para dirigir el tráfico de una sesión de usuario al mismo servidor para su procesamiento",
+            "waf": "Operaciones"
+        },
+        {
+            "category": "Topología de red y conectividad",
+            "guid": "ff353ad8-15fb-4ae8-9fc5-a85a36d36a35",
+            "id": "A01.58",
+            "link": "https://learn.microsoft.com/azure/application-gateway/configuration-http-settings",
+            "service": "App Gateway",
+            "severity": "Alto",
+            "subcategory": "Puerta de enlace de aplicaciones",
+            "text": "Habilite el drenaje de conexiones durante las actualizaciones de servicio planeadas para evitar la pérdida de conexión con los miembros existentes del grupo de back-end",
+            "waf": "Seguridad"
+        },
+        {
+            "category": "Topología de red y conectividad",
+            "guid": "c8741f03-45a4-4183-a6b8-139e0773b8b5",
+            "id": "A01.59",
+            "link": "https://learn.microsoft.com/azure/application-gateway/custom-error",
+            "service": "App Gateway",
+            "severity": "Bajo",
+            "subcategory": "Puerta de enlace de aplicaciones",
+            "text": "Cree páginas de error personalizadas para mostrar una experiencia de usuario personalizada",
+            "waf": "Operaciones"
+        },
+        {
+            "category": "Topología de red y conectividad",
+            "guid": "f850d46f-f5d7-4b17-b48c-a780741402e1",
+            "id": "A01.60",
+            "link": "https://learn.microsoft.com/azure/application-gateway/rewrite-http-headers-url",
+            "service": "App Gateway",
+            "severity": "Medio",
+            "subcategory": "Puerta de enlace de aplicaciones",
+            "text": "Edite las solicitudes HTTP y los encabezados de respuesta para facilitar el enrutamiento y el intercambio de información entre el cliente y el servidor",
+            "waf": "Seguridad"
+        },
+        {
+            "category": "Topología de red y conectividad",
+            "guid": "eadc3164-4a0f-461c-85f1-1a372c04dfd1",
+            "id": "A01.61",
+            "link": "https://learn.microsoft.com/azure/frontdoor/front-door-overview",
+            "service": "App Gateway",
+            "severity": "Medio",
+            "subcategory": "Puerta de enlace de aplicaciones",
+            "text": "Configure Front Door para optimizar el enrutamiento del tráfico web global y el rendimiento del usuario final de primer nivel, así como la confiabilidad a través de una rápida conmutación por error global",
+            "waf": "Rendimiento"
+        },
+        {
+            "category": "Topología de red y conectividad",
+            "guid": "29dcc19f-a8fa-4c35-8281-290577538793",
+            "id": "A01.62",
+            "link": "https://learn.microsoft.com/azure/load-balancer/load-balancer-overview",
+            "service": "App Gateway",
+            "severity": "Medio",
+            "subcategory": "Puerta de enlace de aplicaciones",
+            "text": "Usar el equilibrio de carga de la capa de transporte",
+            "waf": "Rendimiento"
+        },
+        {
+            "category": "Topología de red y conectividad",
+            "guid": "276898c1-af5e-4819-9e8e-049c7801ab9d",
+            "id": "A01.63",
+            "link": "https://learn.microsoft.com/azure/application-gateway/multiple-site-overview",
+            "service": "App Gateway",
+            "severity": "Medio",
+            "subcategory": "Puerta de enlace de aplicaciones",
+            "text": "Configure el enrutamiento basado en el host o el nombre de dominio para varias aplicaciones web en una sola puerta de enlace",
+            "waf": "Seguridad"
+        },
+        {
+            "category": "Topología de red y conectividad",
+            "guid": "5fe365b6-58e8-47ed-a8cf-5163850380a2",
+            "id": "A01.64",
+            "link": "https://learn.microsoft.com/azure/application-gateway/create-ssl-portal",
+            "service": "App Gateway",
+            "severity": "Medio",
+            "subcategory": "Puerta de enlace de aplicaciones",
+            "text": "Centralice la administración de certificados SSL para reducir la sobrecarga de cifrado y descifrado de una granja de servidores back-end",
+            "waf": "Seguridad"
+        },
+        {
+            "category": "Topología de red y conectividad",
+            "guid": "fa64b4dd-35c2-4047-ac5c-45dfbf8b0db9",
+            "id": "A01.65",
+            "link": "https://learn.microsoft.com/azure/application-gateway/application-gateway-websocket",
+            "service": "App Gateway",
+            "severity": "Bajo",
+            "subcategory": "Puerta de enlace de aplicaciones",
+            "text": "Use Application Gateway para obtener compatibilidad nativa con los protocolos WebSocket y HTTP/2",
+            "waf": "Seguridad"
+        }
+    ],
+    "metadata": {
+        "name": "Azure Application Delivery Networking",
+        "state": "GA",
+        "timestamp": "September 23, 2024",
+        "waf": "all"
+    },
+    "severities": [
+        {
+            "name": "Alto"
+        },
+        {
+            "name": "Medio"
+        },
+        {
+            "name": "Bajo"
+        }
+    ],
+    "status": [
+        {
+            "description": "Esta comprobación aún no se ha examinado",
+            "name": "No verificado"
+        },
+        {
+            "description": "Hay un elemento de acción asociado a esta comprobación",
+            "name": "Abrir"
+        },
+        {
+            "description": "Esta comprobación se ha verificado y no hay más elementos de acción asociados a ella",
+            "name": "Cumplido"
+        },
+        {
+            "description": "Recomendación comprendida, pero no necesaria por los requisitos actuales",
+            "name": "No es necesario"
+        },
+        {
+            "description": "No aplicable para el diseño actual",
+            "name": "N/A"
+        }
+    ],
+    "waf": [
+        {
+            "name": "Fiabilidad"
+        },
+        {
+            "name": "Seguridad"
+        },
+        {
+            "name": "Costar"
+        },
+        {
+            "name": "Operaciones"
+        },
+        {
+            "name": "Rendimiento"
+        }
+    ],
+    "yesno": [
+        {
+            "name": "Sí"
+        },
+        {
+            "name": "No"
+        }
+    ]
+}

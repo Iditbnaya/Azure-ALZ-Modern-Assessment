@@ -149,7 +149,7 @@ class DashboardManager {
     }
 
     /**
-     * Initialize all dashboard charts
+     * Initialize all dashboard charts and tables
      */
     initializeDashboard() {
         this.destroyAllCharts();
@@ -158,6 +158,7 @@ class DashboardManager {
         this.createSeverityChart();
         this.createCategoryChart();
         this.updateStatistics();
+        this.updateCategoryBreakdownTable();
     }
 
     /**
@@ -385,10 +386,134 @@ class DashboardManager {
         if (completedItems) completedItems.textContent = stats.reviewed;
         if (fulfilledItems) fulfilledItems.textContent = stats.fulfilled;
         if (openItems) openItems.textContent = stats.open;
+        
+        // Update category breakdown table
+        this.updateCategoryBreakdownTable();
     }
 
     /**
-     * Update all charts with current data
+     * Update category breakdown table
+     */
+    updateCategoryBreakdownTable() {
+        const tbody = document.getElementById('categoryBreakdownBody');
+        const tfoot = document.getElementById('categoryBreakdownFooter');
+        
+        if (!tbody || !tfoot) return;
+
+        const checklist = this.dataLoader.getCurrentChecklist();
+        if (!checklist) return;
+
+        // Calculate category statistics
+        const categoryStats = this.calculateCategoryStatistics();
+        
+        // Clear existing rows
+        tbody.innerHTML = '';
+        
+        // Populate category rows
+        let totalNotVerified = 0;
+        let totalOpen = 0;
+        let totalFulfilled = 0;
+        let totalItems = 0;
+        
+        Object.keys(categoryStats).sort().forEach(category => {
+            const stats = categoryStats[category];
+            const row = document.createElement('tr');
+            
+            const notVerified = stats.notVerified || 0;
+            const open = stats.open || 0;
+            const fulfilled = stats.fulfilled || 0;
+            const total = stats.total || 0;
+            const progress = total > 0 ? Math.round(((fulfilled + stats.notRequired) / total) * 100) : 0;
+            
+            // Accumulate totals
+            totalNotVerified += notVerified;
+            totalOpen += open;
+            totalFulfilled += fulfilled;
+            totalItems += total;
+            
+            // Determine progress color class
+            let progressClass = 'progress-none';
+            if (progress >= 75) progressClass = 'progress-high';
+            else if (progress >= 25) progressClass = 'progress-medium';
+            else if (progress > 0) progressClass = 'progress-low';
+            
+            row.innerHTML = `
+                <td>${category}</td>
+                <td>${notVerified}</td>
+                <td>${open}</td>
+                <td>${fulfilled}</td>
+                <td><strong>${total}</strong></td>
+                <td class="progress-cell ${progressClass}">${progress}%</td>
+            `;
+            
+            tbody.appendChild(row);
+        });
+        
+        // Add totals row
+        const totalProgress = totalItems > 0 ? Math.round((totalFulfilled / totalItems) * 100) : 0;
+        let totalProgressClass = 'progress-none';
+        if (totalProgress >= 75) totalProgressClass = 'progress-high';
+        else if (totalProgress >= 25) totalProgressClass = 'progress-medium';
+        else if (totalProgress > 0) totalProgressClass = 'progress-low';
+        
+        tfoot.innerHTML = `
+            <tr>
+                <td><strong>Total</strong></td>
+                <td><strong>${totalNotVerified}</strong></td>
+                <td><strong>${totalOpen}</strong></td>
+                <td><strong>${totalFulfilled}</strong></td>
+                <td><strong>${totalItems}</strong></td>
+                <td class="progress-cell ${totalProgressClass}"><strong>${totalProgress}%</strong></td>
+            </tr>
+        `;
+    }
+
+    /**
+     * Calculate statistics by category
+     */
+    calculateCategoryStatistics() {
+        const checklist = this.dataLoader.getCurrentChecklist();
+        if (!checklist) return {};
+
+        const categoryStats = {};
+        
+        checklist.items.forEach(item => {
+            const category = item.category || 'Unknown';
+            
+            if (!categoryStats[category]) {
+                categoryStats[category] = {
+                    notVerified: 0,
+                    open: 0,
+                    fulfilled: 0,
+                    notRequired: 0,
+                    total: 0
+                };
+            }
+            
+            categoryStats[category].total++;
+            
+            const status = item.status || 'Not verified';
+            switch (status) {
+                case 'Not verified':
+                    categoryStats[category].notVerified++;
+                    break;
+                case 'Open':
+                    categoryStats[category].open++;
+                    break;
+                case 'Fulfilled':
+                    categoryStats[category].fulfilled++;
+                    break;
+                case 'Not required':
+                    categoryStats[category].notRequired++;
+                    break;
+            }
+        });
+
+        return categoryStats;
+    }
+
+    /**
+     * Update all charts and tables with current data
      */
     updateCharts() {
         this.destroyAllCharts();
@@ -397,6 +522,7 @@ class DashboardManager {
         this.createSeverityChart();
         this.createCategoryChart();
         this.updateStatistics();
+        this.updateCategoryBreakdownTable();
     }
 
     /**

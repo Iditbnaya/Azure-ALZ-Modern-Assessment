@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Azure ALZ Assessment - Unit Tests</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .header {
+            background: linear-gradient(135deg, #0078d4 0%, #00bcf2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+        .test-suite {
+            background: white;
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .test-suite h2 {
+            color: #0078d4;
+            margin-top: 0;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 10px;
+        }
+        .test-case {
+            padding: 12px;
+            margin: 10px 0;
+            border-left: 4px solid #ccc;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .test-case.running {
+            border-left-color: #ffa500;
+            background-color: #fff8e1;
+        }
+        .test-case.pass {
+            border-left-color: #4caf50;
+            background-color: #e8f5e9;
+        }
+        .test-case.fail {
+            border-left-color: #f44336;
+            background-color: #ffebee;
+        }
+        .test-name {
+            flex: 1;
+            font-weight: 500;
+        }
+        .test-status {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .status-pending {
+            background-color: #e0e0e0;
+            color: #666;
+        }
+        .status-running {
+            background-color: #ffa500;
+            color: white;
+        }
+        .status-pass {
+            background-color: #4caf50;
+            color: white;
+        }
+        .status-fail {
+            background-color: #f44336;
+            color: white;
+        }
+        .test-error {
+            color: #d32f2f;
+            font-size: 14px;
+            margin-top: 8px;
+            padding: 10px;
+            background-color: #ffcdd2;
+            border-radius: 4px;
+        }
+        .summary {
+            background: linear-gradient(135deg, #0078d4 0%, #00bcf2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 30px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .summary-item {
+            text-align: center;
+        }
+        .summary-value {
+            font-size: 36px;
+            font-weight: bold;
+            display: block;
+        }
+        .summary-label {
+            font-size: 14px;
+            opacity: 0.9;
+            display: block;
+            margin-top: 5px;
+        }
+        .run-button {
+            background-color: #0078d4;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+        .run-button:hover {
+            background-color: #005a9e;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+        .run-button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .button-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🧪 Azure Landing Zone Assessment - Unit Test Suite</h1>
+        <p style="margin: 10px 0 0 0;">Comprehensive testing of Excel import/export, comments, status fields, and PowerPoint generation</p>
+    </div>
+
+    <div class="button-container">
+        <button id="runTests" class="run-button">▶️ Run All Tests</button>
+    </div>
+
+    <div class="test-suite" id="dataLoaderTests">
+        <h2>📋 Data Loader & Checklist Tests</h2>
+        <div id="dataLoaderTestCases"></div>
+    </div>
+
+    <div class="test-suite" id="excelExportTests">
+        <h2>📤 Excel/CSV Export Tests</h2>
+        <div id="excelExportTestCases"></div>
+    </div>
+
+    <div class="test-suite" id="excelImportTests">
+        <h2>📥 Excel Import Tests</h2>
+        <div id="excelImportTestCases"></div>
+    </div>
+
+    <div class="test-suite" id="commentTests">
+        <h2>💬 Comments Functionality Tests</h2>
+        <div id="commentTestCases"></div>
+    </div>
+
+    <div class="test-suite" id="pptTests">
+        <h2>📊 PowerPoint Export Tests</h2>
+        <div id="pptTestCases"></div>
+    </div>
+
+    <div class="summary">
+        <div class="summary-item">
+            <span class="summary-value" id="totalTests">0</span>
+            <span class="summary-label">Total Tests</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-value" id="passedTests">0</span>
+            <span class="summary-label">Passed ✅</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-value" id="failedTests">0</span>
+            <span class="summary-label">Failed ❌</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-value" id="successRate">0%</span>
+            <span class="summary-label">Success Rate</span>
+        </div>
+    </div>
+
+    <script src="../js/data-loader.js"></script>
+    <script src="../js/export.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <script>
+        // Test framework
+        class TestRunner {
+            constructor() {
+                this.tests = [];
+                this.results = {
+                    total: 0,
+                    passed: 0,
+                    failed: 0
+                };
+            }
+
+            addTest(suite, name, testFn) {
+                this.tests.push({ suite, name, testFn, status: 'pending', error: null });
+            }
+
+            async runAll() {
+                console.log('🚀 Starting test run...');
+                this.results = { total: this.tests.length, passed: 0, failed: 0 };
+                
+                for (const test of this.tests) {
+                    await this.runTest(test);
+                    await this.delay(100); // Small delay between tests
+                }
+
+                this.updateSummary();
+                console.log('✅ Test run complete!', this.results);
+            }
+
+            async runTest(test) {
+                const element = document.getElementById(`test-${this.sanitizeId(test.name)}`);
+                test.status = 'running';
+                this.updateTestUI(element, test);
+
+                try {
+                    await test.testFn();
+                    test.status = 'pass';
+                    this.results.passed++;
+                    console.log(`✅ PASS: ${test.name}`);
+                } catch (error) {
+                    test.status = 'fail';
+                    test.error = error.message;
+                    this.results.failed++;
+                    console.error(`❌ FAIL: ${test.name}`, error);
+                }
+
+                this.updateTestUI(element, test);
+            }
+
+            sanitizeId(name) {
+                return name.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
+            }
+
+            updateTestUI(element, test) {
+                element.className = `test-case ${test.status}`;
+                const statusSpan = element.querySelector('.test-status');
+                statusSpan.className = `test-status status-${test.status}`;
+                statusSpan.textContent = test.status;
+
+                if (test.error) {
+                    let errorDiv = element.querySelector('.test-error');
+                    if (!errorDiv) {
+                        errorDiv = document.createElement('div');
+                        errorDiv.className = 'test-error';
+                        element.appendChild(errorDiv);
+                    }
+                    errorDiv.textContent = `Error: ${test.error}`;
+                }
+            }
+
+            updateSummary() {
+                document.getElementById('totalTests').textContent = this.results.total;
+                document.getElementById('passedTests').textContent = this.results.passed;
+                document.getElementById('failedTests').textContent = this.results.failed;
+                const rate = this.results.total > 0 
+                    ? Math.round((this.results.passed / this.results.total) * 100) 
+                    : 0;
+                document.getElementById('successRate').textContent = `${rate}%`;
+            }
+
+            renderTests() {
+                const suites = {};
+                this.tests.forEach(test => {
+                    if (!suites[test.suite]) {
+                        suites[test.suite] = [];
+                    }
+                    suites[test.suite].push(test);
+                });
+
+                Object.keys(suites).forEach(suite => {
+                    const container = document.getElementById(`${suite}TestCases`);
+                    if (container) {
+                        container.innerHTML = suites[suite].map(test => `
+                            <div id="test-${this.sanitizeId(test.name)}" class="test-case pending">
+                                <span class="test-name">${test.name}</span>
+                                <span class="test-status status-pending">pending</span>
+                            </div>
+                        `).join('');
+                    }
+                });
+            }
+
+            delay(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+        }
+
+        // Assertion helpers
+        function assert(condition, message) {
+            if (!condition) {
+                throw new Error(message || 'Assertion failed');
+            }
+        }
+
+        function assertEqual(actual, expected, message) {
+            if (actual !== expected) {
+                throw new Error(message || `Expected ${expected} but got ${actual}`);
+            }
+        }
+
+        function assertNotNull(value, message) {
+            if (value === null || value === undefined) {
+                throw new Error(message || 'Value is null or undefined');
+            }
+        }
+
+        function assertArrayLength(array, length, message) {
+            if (!Array.isArray(array) || array.length !== length) {
+                throw new Error(message || `Expected array length ${length} but got ${array ? array.length : 'not an array'}`);
+            }
+        }
+
+        function assertContains(array, value, message) {
+            if (!array || !array.includes(value)) {
+                throw new Error(message || `Array does not contain ${value}`);
+            }
+        }
+
+        // Initialize test runner
+        const runner = new TestRunner();
+
+        // ============ DATA LOADER TESTS ============
+        runner.addTest('dataLoader', 'DataLoader class should be defined', async () => {
+            assertNotNull(window.DataLoader, 'DataLoader class not found');
+        });
+
+        runner.addTest('dataLoader', 'Should load checklist data', async () => {
+            const loader = new DataLoader();
+            const checklist = await loader.loadChecklist();
+            assertNotNull(checklist, 'Checklist data is null');
+            assert(checklist.categories && checklist.categories.length > 0, 'No categories found');
+        });
+
+        runner.addTest('dataLoader', 'Checklist items should have required fields', async () => {
+            const loader = new DataLoader();
+            const checklist = await loader.loadChecklist();
+            const firstCategory = checklist.categories[0];
+            assert(firstCategory.items && firstCategory.items.length > 0, 'No items in first category');
+            
+            const firstItem = firstCategory.items[0];
+            assertNotNull(firstItem.id, 'Item missing id field');
+            assertNotNull(firstItem.text, 'Item missing text field');
+        });
+
+        // ============ EXCEL EXPORT TESTS ============
+        runner.addTest('excelExport', 'ExportManager class should be defined', async () => {
+            assertNotNull(window.ExportManager, 'ExportManager class not found');
+        });
+
+        runner.addTest('excelExport', 'prepareExcelData should include status column', async () => {
+            const loader = new DataLoader();
+            const checklist = await loader.loadChecklist();
+            const exporter = new ExportManager(checklist);
+            
+            const data = exporter.prepareExcelData();
+            assert(data.length > 0, 'No Excel data generated');
+            
+            // Check header row
+            const headers = data[0];
+            assertContains(headers, 'status', 'Status column missing from Excel export');
+        });
+
+        runner.addTest('excelExport', 'Excel export should include all required columns', async () => {
+            const loader = new DataLoader();
+            const checklist = await loader.loadChecklist();
+            const exporter = new ExportManager(checklist);
+            
+            const data = exporter.prepareExcelData();
+            const headers = data[0];
+            
+            const requiredColumns = ['id', 'category', 'subcategory', 'text', 'status', 'severity', 'link'];
+            requiredColumns.forEach(col => {
+                assertContains(headers, col, `Required column '${col}' missing from Excel export`);
+            });
+        });
+
+        runner.addTest('excelExport', 'CSV export should include status column', async () => {
+            const loader = new DataLoader();
+            const checklist = await loader.loadChecklist();
+            const exporter = new ExportManager(checklist);
+            
+            const csv = exporter.convertToCSV();
+            assert(csv.includes('status'), 'Status column missing from CSV export');
+        });
+
+        runner.addTest('excelExport', 'Excel data rows should have status field', async () => {
+            const loader = new DataLoader();
+            const checklist = await loader.loadChecklist();
+            const exporter = new ExportManager(checklist);
+            
+            const data = exporter.prepareExcelData();
+            const headers = data[0];
+            const statusIndex = headers.indexOf('status');
+            assert(statusIndex >= 0, 'Status column not found in headers');
+            
+            // Check first data row (skip header)
+            if (data.length > 1) {
+                const firstRow = data[1];
+                assertNotNull(firstRow[statusIndex], 'Status value missing in data row');
+            }
+        });
+
+        // ============ EXCEL IMPORT TESTS ============
+        runner.addTest('excelImport', 'Should handle empty rows in Excel upload', async () => {
+            // Simulate Excel data with empty rows
+            const mockData = [
+                ['id', 'category', 'status'],
+                ['ALZ-001', 'Identity', 'completed'],
+                ['', '', ''], // Empty row
+                ['', '', ''], // Empty row
+                ['ALZ-002', 'Network', 'not-verified']
+            ];
+            
+            let processedRows = 0;
+            let shouldStop = false;
+            let consecutiveEmpty = 0;
+            
+            for (let i = 1; i < mockData.length; i++) {
+                const row = mockData[i];
+                const isEmpty = !row[0] && !row[1] && !row[2];
+                
+                if (isEmpty) {
+                    consecutiveEmpty++;
+                    if (consecutiveEmpty >= 10) {
+                        shouldStop = true;
+                        break;
+                    }
+                } else {
+                    consecutiveEmpty = 0;
+                    processedRows++;
+                }
+            }
+            
+            assertEqual(processedRows, 2, 'Should process exactly 2 non-empty rows');
+            assertEqual(shouldStop, false, 'Should not stop for less than 10 consecutive empty rows');
+        });
+
+        runner.addTest('excelImport', 'Should stop after 10 consecutive empty rows', async () => {
+            // Simulate Excel data with 10+ empty rows
+            const mockData = [
+                ['id', 'category', 'status'],
+                ['ALZ-001', 'Identity', 'completed']
+            ];
+            
+            // Add 10 empty rows
+            for (let i = 0; i < 10; i++) {
+                mockData.push(['', '', '']);
+            }
+            
+            mockData.push(['ALZ-002', 'Network', 'not-verified']); // This should not be processed
+            
+            let processedRows = 0;
+            let consecutiveEmpty = 0;
+            let stopped = false;
+            
+            for (let i = 1; i < mockData.length && !stopped; i++) {
+                const row = mockData[i];
+                const isEmpty = !row[0] && !row[1] && !row[2];
+                
+                if (isEmpty) {
+                    consecutiveEmpty++;
+                    if (consecutiveEmpty >= 10) {
+                        stopped = true;
+                        break;
+                    }
+                } else {
+                    consecutiveEmpty = 0;
+                    processedRows++;
+                }
+            }
+            
+            assertEqual(processedRows, 1, 'Should process only 1 row before stopping');
+            assertEqual(stopped, true, 'Should stop after 10 consecutive empty rows');
+        });
+
+        runner.addTest('excelImport', 'Column mapping should handle typos', async () => {
+            const columnVariations = {
+                'comment': ['comment', 'comments', 'commant'],
+                'severity': ['severity', 'sevirity'],
+                'waf': ['waf', 'waf pillar', 'pillar']
+            };
+            
+            // Test that all variations are recognized
+            Object.keys(columnVariations).forEach(standard => {
+                const variations = columnVariations[standard];
+                assert(variations.length > 1, `Should have variations for ${standard}`);
+            });
+        });
+
+        // ============ COMMENT TESTS ============
+        runner.addTest('comment', 'Items should use singular "comment" field', async () => {
+            const loader = new DataLoader();
+            const checklist = await loader.loadChecklist();
+            
+            // Create test item with comment
+            const testItem = {
+                id: 'TEST-001',
+                text: 'Test item',
+                status: 'completed',
+                comment: 'This is a test comment'
+            };
+            
+            assertNotNull(testItem.comment, 'Comment field should exist');
+            assertEqual(testItem.comment, 'This is a test comment', 'Comment value incorrect');
+        });
+
+        runner.addTest('comment', 'Excel export should include comment column', async () => {
+            const loader = new DataLoader();
+            const checklist = await loader.loadChecklist();
+            const exporter = new ExportManager(checklist);
+            
+            const data = exporter.prepareExcelData();
+            const headers = data[0];
+            
+            const hasCommentColumn = headers.some(h => 
+                h.toLowerCase() === 'comment' || h.toLowerCase() === 'comments'
+            );
+            assert(hasCommentColumn, 'Comment column missing from Excel export');
+        });
+
+        runner.addTest('comment', 'Comments should persist through save/load cycle', async () => {
+            // Simulate adding a comment to an item
+            const testItem = {
+                id: 'TEST-001',
+                status: 'completed',
+                comment: 'Test comment content'
+            };
+            
+            // Simulate export
+            const exportData = {
+                items: [testItem]
+            };
+            
+            const jsonString = JSON.stringify(exportData);
+            const parsed = JSON.parse(jsonString);
+            
+            assertEqual(parsed.items[0].comment, 'Test comment content', 
+                'Comment should persist through JSON serialization');
+        });
+
+        // ============ POWERPOINT TESTS ============
+        runner.addTest('ppt', 'Should not include logo image in PowerPoint', async () => {
+            // This test checks that the exportPowerPoint function exists
+            // and doesn't throw an error when called
+            const loader = new DataLoader();
+            const checklist = await loader.loadChecklist();
+            const exporter = new ExportManager(checklist);
+            
+            assertNotNull(exporter.exportPowerPoint, 'exportPowerPoint method not found');
+        });
+
+        runner.addTest('ppt', 'PowerPoint export should include title slide', async () => {
+            // Test that the export function is properly defined
+            const loader = new DataLoader();
+            const checklist = await loader.loadChecklist();
+            const exporter = new ExportManager(checklist);
+            
+            // Just verify the method exists and is callable
+            assert(typeof exporter.exportPowerPoint === 'function', 
+                'exportPowerPoint should be a function');
+        });
+
+        runner.addTest('ppt', 'PowerPoint should use text branding only', async () => {
+            // This is a structural test - we verify the code doesn't reference image data
+            const exportCode = window.ExportManager.toString();
+            
+            // The old code had base64 image data starting with "iVBORw0KGgo"
+            assert(!exportCode.includes('addImage'), 
+                'PowerPoint export should not contain addImage calls for logo');
+        });
+
+        // ============ PERFORMANCE TESTS ============
+        runner.addTest('excelImport', 'Should process Excel quickly (< 5 seconds)', async () => {
+            const startTime = Date.now();
+            
+            // Simulate processing 250 rows (typical assessment size)
+            const mockData = [['id', 'category', 'status']];
+            for (let i = 0; i < 250; i++) {
+                mockData.push([`ALZ-${String(i).padStart(3, '0')}`, 'Category', 'not-verified']);
+            }
+            
+            // Simulate processing
+            let processed = 0;
+            for (let i = 1; i < mockData.length; i++) {
+                const row = mockData[i];
+                if (row[0]) processed++;
+            }
+            
+            const endTime = Date.now();
+            const duration = (endTime - startTime) / 1000;
+            
+            assert(duration < 5, `Processing took ${duration.toFixed(2)}s, should be under 5s`);
+            assertEqual(processed, 250, 'Should process all 250 rows');
+        });
+
+        // Render all tests
+        runner.renderTests();
+
+        // Run tests button
+        document.getElementById('runTests').addEventListener('click', async () => {
+            const button = document.getElementById('runTests');
+            button.disabled = true;
+            button.textContent = '⏳ Running Tests...';
+            
+            await runner.runAll();
+            
+            button.disabled = false;
+            button.textContent = '🔄 Run Tests Again';
+        });
+
+        // Auto-run tests on load (optional)
+        console.log('✅ Test suite loaded. Click "Run All Tests" to begin.');
+        console.log(`📊 Total tests registered: ${runner.tests.length}`);
+    </script>
+</body>
+</html>

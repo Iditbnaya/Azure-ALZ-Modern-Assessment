@@ -1,0 +1,151 @@
+{
+    "categories": [
+        {
+            "name": "ID 및 액세스 관리"
+        },
+        {
+            "name": "네트워크 토폴로지 및 연결"
+        },
+        {
+            "name": "BC 및 DR"
+        },
+        {
+            "name": "거버넌스 및 보안"
+        },
+        {
+            "name": "비용 거버넌스"
+        },
+        {
+            "name": "작업"
+        },
+        {
+            "name": "응용 프로그램 배포"
+        }
+    ],
+    "items": [
+        {
+            "category": "BC 및 DR",
+            "cost": 1,
+            "guid": "3b7a56de-5020-4642-b3cb-c976e80b6d6d",
+            "id": "A01.01",
+            "link": "https://learn.microsoft.com/azure/logic-apps/single-tenant-overview-compare",
+            "service": "Logic Apps",
+            "severity": "높다",
+            "subcategory": "고가용성",
+            "text": "비즈니스 및 SLO 요구 사항에 따라 올바른 Logic App 호스팅 계획 선택Select the right Logic App hosting plan based on your business & SLO requirements",
+            "waf": "신뢰도"
+        },
+        {
+            "category": "BC 및 DR",
+            "cost": 1,
+            "guid": "3d7008bd-6bc1-4b03-8aa8-ec2a3b55786a",
+            "id": "A01.02",
+            "link": "https://learn.microsoft.com/azure/logic-apps/set-up-zone-redundancy-availability-zones?tabs=standard#next-steps",
+            "service": "Logic Apps",
+            "severity": "높다",
+            "subcategory": "고가용성",
+            "text": "영역 중복 및 가용성 영역을 사용하여 지역 오류로부터 논리 앱 보호Protect logic apps from region failures with zone redundancy and availability zones",
+            "waf": "신뢰도"
+        },
+        {
+            "category": "BC 및 DR",
+            "cost": 1,
+            "guid": "1cda768f-a206-445d-8234-56f6a6e7286e",
+            "id": "A01.03",
+            "link": "https://learn.microsoft.com/azure/logic-apps/business-continuity-disaster-recovery-guidance?toc=%2Fazure%2Freliability%2Ftoc.json&bc=%2Fazure%2Freliability%2Fbreadcrumb%2Ftoc.json",
+            "service": "Logic Apps",
+            "severity": "높다",
+            "subcategory": "고가용성",
+            "text": "중요한 워크로드에 대한 지역 간 DR 전략 고려",
+            "waf": "신뢰도"
+        },
+        {
+            "category": "BC 및 DR",
+            "cost": 1,
+            "guid": "82118ec5-ed6f-4c68-9471-eb0da98a1b34",
+            "id": "A01.04",
+            "link": "https://learn.microsoft.com/azure/app-service/environment/intro",
+            "service": "Logic Apps",
+            "severity": "높다",
+            "subcategory": "고가용성",
+            "text": "격리된 환경에 배포하는 경우 ASE(App Service Environment) v3을 사용하거나 마이그레이션합니다",
+            "waf": "신뢰도"
+        },
+        {
+            "category": "응용 프로그램 배포",
+            "cost": 1,
+            "guid": "74275fa5-9e08-4c7e-b096-13b538fe1501",
+            "id": "B01.01",
+            "link": "https://learn.microsoft.com/training/modules/deploy-azure-functions/",
+            "service": "Logic Apps",
+            "severity": "보통",
+            "subcategory": "CI/CD (영어)",
+            "text": "Azure DevOps 또는 GitHub를 활용하여 CI/CD를 간소화하고 논리 앱 코드를 보호합니다.",
+            "waf": "작업"
+        }
+    ],
+    "metadata": {
+        "name": "Logic Apps checklist",
+        "state": "Preview",
+        "timestamp": "April 26, 2024",
+        "waf": "all"
+    },
+    "severities": [
+        {
+            "name": "높다"
+        },
+        {
+            "name": "보통"
+        },
+        {
+            "name": "낮다"
+        }
+    ],
+    "status": [
+        {
+            "description": "이 검사는 아직 검토되지 않았습니다",
+            "name": "확인되지 않음"
+        },
+        {
+            "description": "이 검사와 연관된 작업 항목이 있습니다",
+            "name": "열다"
+        },
+        {
+            "description": "이 검사는 확인되었으며 이와 관련된 추가 작업 항목이 없습니다",
+            "name": "성취"
+        },
+        {
+            "description": "권장 사항은 이해되었지만 현재 요구 사항에 필요하지 않음",
+            "name": "필요 없음"
+        },
+        {
+            "description": "현재 설계에는 적용되지 않습니다.",
+            "name": "해당 없음"
+        }
+    ],
+    "waf": [
+        {
+            "name": "신뢰도"
+        },
+        {
+            "name": "안전"
+        },
+        {
+            "name": "비용"
+        },
+        {
+            "name": "작업"
+        },
+        {
+            "name": "공연"
+        }
+    ],
+    "yesno": [
+        {
+            "name": "예"
+        },
+        {
+            "name": "아니요"
+        }
+    ]
+}
