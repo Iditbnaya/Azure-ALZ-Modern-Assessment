@@ -41,6 +41,8 @@ A comprehensive web-based assessment tool that helps organizations evaluate thei
 - 🧪 **Fully Tested**: Comprehensive unit test suite covering all critical functionality
 - 🔍 **Smart Import**: Intelligent column mapping handles typos and format variations
 
+![alt text](image-1.png)
+
 ## 🚀 Quick Start
 
 ### 1. Repository Setup
