@@ -42,6 +42,12 @@
                     <h1>Azure Landing Zone Assessment</h1>
                 </div>
                 <div class="header-controls">
+                    <!-- File status indicator -->
+                    <div id="fileStatus" class="file-status" style="display: none;">
+                        <span id="currentFileName">Untitled</span>
+                        <span id="unsavedIndicator" class="unsaved-indicator" style="display: none;">*</span>
+                    </div>
+                    
                     <select id="languageSelector" class="language-selector" title="Select Language">
                         <option value="en">🇬🇧 English</option>
                         <option value="es">🇪🇸 Español</option>
@@ -235,6 +241,9 @@
                             </select>
                         </div>
                         <button id="clearFilters" class="btn btn-secondary">Clear Filters</button>
+                        <button id="quickSave" class="btn btn-success" style="margin-left: 1rem;" title="Save to current file (Ctrl+S)">
+                            <i class="fas fa-save"></i> Save
+                        </button>
                         <button id="resetAssessment" class="btn btn-warning" style="margin-left: 1rem;">
                             <i class="fas fa-undo"></i> Reset Assessment
                         </button>
@@ -372,6 +381,9 @@
                             </button>
                             <button id="saveProgress" class="btn btn-secondary">
                                 <i class="fas fa-save"></i> Save Progress
+                            </button>
+                            <button id="saveAsProgress" class="btn btn-success">
+                                <i class="fas fa-save"></i> Save As...
                             </button>
                             <button id="loadProgress" class="btn btn-secondary">
                                 <i class="fas fa-upload"></i> Load Progress

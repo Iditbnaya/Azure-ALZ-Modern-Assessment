@@ -101,6 +101,31 @@ body {
     gap: var(--spacing-md);
 }
 
+/* File status indicator */
+.file-status {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+}
+
+.file-status #currentFileName {
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.unsaved-indicator {
+    color: var(--warning-color);
+    font-weight: bold;
+    font-size: 16px;
+    line-height: 1;
+}
+
 /* Form Controls */
 .language-selector,
 .checklist-selector {

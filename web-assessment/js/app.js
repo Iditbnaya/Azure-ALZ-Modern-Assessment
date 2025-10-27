@@ -14,6 +14,12 @@ class ALZAssessmentApp {
         this.isLoading = false;
         this.diagnosticLogs = [];
         
+        // File tracking for save functionality
+        this.currentFileName = null;
+        this.currentFileHandle = null;
+        this.fileHasUnsavedChanges = false;
+        this.lastSavedData = null;
+        
         this.setupDiagnosticLogging();
         this.initialize();
     }
@@ -135,6 +141,12 @@ class ALZAssessmentApp {
             resetButton.addEventListener('click', () => this.resetAssessment());
         }
 
+        // Quick save button
+        const quickSaveButton = document.getElementById('quickSave');
+        if (quickSaveButton) {
+            quickSaveButton.addEventListener('click', () => this.quickSaveProgress());
+        }
+
         // Handle browser navigation
         window.addEventListener('popstate', (event) => {
             if (event.state && event.state.view) {
@@ -158,6 +170,15 @@ class ALZAssessmentApp {
         // Save progress before page unload
         window.addEventListener('beforeunload', () => {
             this.autoSaveProgress();
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (event) => {
+            // Ctrl+S for save
+            if (event.ctrlKey && event.key === 's') {
+                event.preventDefault();
+                this.quickSaveProgress();
+            }
         });
     }
 
@@ -414,6 +435,14 @@ class ALZAssessmentApp {
             };
 
             localStorage.setItem('alz-assessment-autosave', JSON.stringify(progressData));
+            
+            // Check if data has changed since last save
+            const currentDataString = JSON.stringify(progressData.data);
+            if (this.lastSavedData !== currentDataString) {
+                this.fileHasUnsavedChanges = true;
+                this.updateWindowTitle();
+            }
+            
             console.log('Progress auto-saved');
         } catch (error) {
             console.warn('Failed to auto-save progress:', error);
@@ -473,7 +502,12 @@ class ALZAssessmentApp {
             return false;
         }
 
-        // Check if there are any items with status other than 'Not verified'
+        // If we have tracking enabled, use that
+        if (this.fileHasUnsavedChanges !== undefined) {
+            return this.fileHasUnsavedChanges;
+        }
+
+        // Fallback to checking if there are any items with status other than 'Not verified'
         const items = this.dataLoader.filterItems();
         return items.some(item => item.status && item.status !== 'Not verified');
     }
@@ -557,6 +591,186 @@ class ALZAssessmentApp {
         });
 
         return modal;
+    }
+
+    /**
+     * Save current assessment to the same file
+     */
+    async quickSaveProgress() {
+        if (!this.dataLoader?.getCurrentChecklist()) {
+            this.showNotification('No assessment data to save. Please load an assessment first.', 'warning');
+            return;
+        }
+
+        try {
+            console.log('💾 Saving assessment progress...');
+            
+            // If we have a current file, save to it
+            if (this.currentFileHandle) {
+                await this.saveToCurrentFile();
+            } else {
+                // First time save - prompt for file location
+                await this.saveAsNewFile();
+            }
+            
+        } catch (error) {
+            console.error('❌ Save failed:', error);
+            this.showNotification(`Failed to save: ${error.message}`, 'error');
+        }
+    }
+
+    /**
+     * Save to the current file
+     */
+    async saveToCurrentFile() {
+        if (!this.currentFileHandle) {
+            throw new Error('No current file to save to');
+        }
+
+        try {
+            const assessmentData = this.prepareAssessmentData();
+            const jsonString = JSON.stringify(assessmentData, null, 2);
+            
+            // Check if File System Access API is available
+            if ('createWritable' in this.currentFileHandle) {
+                const writable = await this.currentFileHandle.createWritable();
+                await writable.write(jsonString);
+                await writable.close();
+                
+                this.hasUnsavedChanges = false;
+                this.lastSavedData = JSON.stringify(assessmentData);
+                this.updateWindowTitle();
+                
+                this.showNotification(`Saved to ${this.currentFileName}`, 'success');
+                console.log(`✅ Saved to ${this.currentFileName}`);
+            } else {
+                // Fallback for browsers that don't support File System Access API
+                throw new Error('File System Access API not supported');
+            }
+        } catch (error) {
+            if (error.name === 'NotAllowedError') {
+                this.showNotification('Permission denied. Please try Save As instead.', 'warning');
+                await this.saveAsNewFile();
+            } else {
+                throw error;
+            }
+        }
+    }
+
+    /**
+     * Save as a new file
+     */
+    async saveAsNewFile() {
+        try {
+            const assessmentData = this.prepareAssessmentData();
+            const jsonString = JSON.stringify(assessmentData, null, 2);
+            
+            // Check if File System Access API is available
+            if ('showSaveFilePicker' in window) {
+                const fileHandle = await window.showSaveFilePicker({
+                    suggestedName: this.generateFileName(),
+                    types: [{
+                        description: 'JSON files',
+                        accept: { 'application/json': ['.json'] }
+                    }]
+                });
+                
+                const writable = await fileHandle.createWritable();
+                await writable.write(jsonString);
+                await writable.close();
+                
+                // Update current file tracking
+                this.currentFileHandle = fileHandle;
+                this.currentFileName = fileHandle.name;
+                this.fileHasUnsavedChanges = false;
+                this.lastSavedData = JSON.stringify(assessmentData);
+                this.updateWindowTitle();
+                
+                this.showNotification(`Saved as ${this.currentFileName}`, 'success');
+                console.log(`✅ Saved as ${this.currentFileName}`);
+            } else {
+                // Fallback to download for browsers that don't support File System Access API
+                this.downloadAsFile(jsonString, this.generateFileName());
+                this.showNotification('File downloaded (browser doesn\'t support direct file saving)', 'info');
+            }
+        } catch (error) {
+            if (error.name === 'AbortError') {
+                console.log('Save cancelled by user');
+                return;
+            }
+            throw error;
+        }
+    }
+
+    /**
+     * Prepare assessment data for saving
+     */
+    prepareAssessmentData() {
+        const options = {
+            includeComments: true,
+            includeLinks: true,
+            includeOnlyReviewed: false,
+            templateFormat: false
+        };
+        
+        return this.dataLoader.exportData(options);
+    }
+
+    /**
+     * Generate a filename for the assessment
+     */
+    generateFileName() {
+        const checklistType = document.getElementById('checklistSelector')?.value || 'assessment';
+        const timestamp = new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-');
+        return `${checklistType}-assessment-${timestamp}.json`;
+    }
+
+    /**
+     * Download file as fallback
+     */
+    downloadAsFile(content, fileName) {
+        const blob = new Blob([content], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName;
+        link.style.display = 'none';
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        setTimeout(() => URL.revokeObjectURL(url), 100);
+    }
+
+    /**
+     * Update window title to show current file and save status
+     */
+    updateWindowTitle() {
+        const baseTitle = 'Azure Landing Zone Assessment Tool';
+        
+        // Update window title
+        if (this.currentFileName) {
+            const unsavedIndicator = this.fileHasUnsavedChanges ? ' *' : '';
+            document.title = `${this.currentFileName}${unsavedIndicator} - ${baseTitle}`;
+        } else {
+            document.title = baseTitle;
+        }
+        
+        // Update header file status indicator
+        const fileStatus = document.getElementById('fileStatus');
+        const currentFileNameEl = document.getElementById('currentFileName');
+        const unsavedIndicatorEl = document.getElementById('unsavedIndicator');
+        
+        if (fileStatus && currentFileNameEl && unsavedIndicatorEl) {
+            if (this.currentFileName) {
+                fileStatus.style.display = 'flex';
+                currentFileNameEl.textContent = this.currentFileName;
+                unsavedIndicatorEl.style.display = this.fileHasUnsavedChanges ? 'inline' : 'none';
+            } else {
+                fileStatus.style.display = 'none';
+            }
+        }
     }
 
     /**
@@ -676,6 +890,13 @@ class ALZAssessmentApp {
 
             // Process file asynchronously to prevent UI freezing
             await this.processFileAsync(file, event);
+            
+            // Set current file information for save functionality
+            this.currentFileName = file.name;
+            this.currentFileHandle = null; // Can't get handle from file input
+            this.fileHasUnsavedChanges = false;
+            this.lastSavedData = JSON.stringify(this.prepareAssessmentData());
+            this.updateWindowTitle();
             
         } catch (error) {
             console.error('Failed to upload assessment:', error);

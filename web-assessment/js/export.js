@@ -16,6 +16,7 @@ class ExportManager {
     initializeEventListeners() {
         const exportButton = document.getElementById('exportData');
         const saveButton = document.getElementById('saveProgress');
+        const saveAsButton = document.getElementById('saveAsProgress');
         const loadButton = document.getElementById('loadProgress');
         const fileInput = document.getElementById('progressFile');
         const templateFormatCheckbox = document.getElementById('templateFormat');
@@ -25,7 +26,11 @@ class ExportManager {
         }
 
         if (saveButton) {
-            saveButton.addEventListener('click', () => this.saveProgress());
+            saveButton.addEventListener('click', () => this.handleSave());
+        }
+
+        if (saveAsButton) {
+            saveAsButton.addEventListener('click', () => this.handleSaveAs());
         }
 
         if (loadButton) {
@@ -1134,7 +1139,31 @@ class ExportManager {
     }
 
     /**
-     * Save current assessment progress to local file
+     * Handle save - uses app's save functionality
+     */
+    handleSave() {
+        if (window.alzApp) {
+            window.alzApp.quickSaveProgress();
+        } else {
+            // Fallback to old save progress method
+            this.saveProgress();
+        }
+    }
+
+    /**
+     * Handle save as - uses app's save as functionality
+     */
+    handleSaveAs() {
+        if (window.alzApp) {
+            window.alzApp.saveAsNewFile();
+        } else {
+            // Fallback to old save progress method
+            this.saveProgress();
+        }
+    }
+
+    /**
+     * Save current assessment progress to local file (legacy method)
      */
     saveProgress() {
         const progressData = {
